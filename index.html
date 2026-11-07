@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cambridge Downconversions</title>
+<style>
+/* Layout: one 1080px column. Filters scope everything beneath them: summary figures,
+   year chart, two ranked charts, a dot map, then the full record table. */
+:root {
+  --bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --muted: #898781;
+  --line: #e1e0d9;
+  --axis: #c3c2b7;
+  --accent: #2a78d6;
+  --accent-ink: #1c5cab;
+  --accent-wash: rgba(42,120,214,0.10);
+  --dim: #cfcec6;
+  --ring: rgba(11,11,11,0.10);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --axis: #383835; --accent: #3987e5; --accent-ink: #6da7ec;
+    --accent-wash: rgba(57,135,229,0.16); --dim: #3a3a37; --ring: rgba(255,255,255,0.10);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
+  --line: #2c2c2a; --axis: #383835; --accent: #3987e5; --accent-ink: #6da7ec;
+  --accent-wash: rgba(57,135,229,0.16); --dim: #3a3a37; --ring: rgba(255,255,255,0.10);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--font);
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent-ink); }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+
+/* header */
+.head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
+.head h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; font-weight: 700; letter-spacing: -0.015em; }
+.head .lede { font-size: 17px; color: var(--ink2); max-width: 64ch; }
+.head .def { font-size: 14px; color: var(--ink2); max-width: 72ch; }
+
+/* filters */
+.filters {
+  display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end;
+  padding: 14px 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px;
+}
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 12px; color: var(--ink2); }
+.field select, .field input[type="search"] {
+  height: 36px; padding: 0 10px; background: var(--bg); border: 1px solid var(--axis); border-radius: 6px; min-width: 0;
+}
+.field input[type="search"] { width: 210px; max-width: 100%; }
+.yr { display: flex; align-items: center; gap: 6px; }
+.yr span { color: var(--muted); }
+.check { display: flex; align-items: center; gap: 8px; height: 36px; font-size: 14px; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.fstat { margin-left: auto; font-size: 13px; color: var(--ink2); display: flex; align-items: center; gap: 12px; height: 36px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent-ink); text-decoration: underline; cursor: pointer; }
+.linkbtn[hidden] { display: none; }
+
+/* summary figures */
+.kpis { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tile .k { font-size: 13px; color: var(--ink2); }
+.tile .v { font-size: 34px; line-height: 1.1; font-weight: 650; letter-spacing: -0.01em; }
+.tile.hero .v { font-size: 56px; color: var(--accent-ink); }
+.tile .s { font-size: 13px; color: var(--muted); }
+@media (max-width: 860px) { .kpis { grid-template-columns: 1fr 1fr; } .tile.hero { grid-column: 1 / -1; } }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card h2 { font-size: 16px; font-weight: 650; }
+.card .sub { font-size: 13px; color: var(--ink2); margin-top: 2px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
+details.data { font-size: 13px; color: var(--ink2); }
+details.data summary { cursor: pointer; width: fit-content; }
+details.data table { margin-top: 8px; border-collapse: collapse; width: 100%; max-width: 420px; }
+details.data th, details.data td { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; font-weight: 400; }
+details.data th { color: var(--muted); }
+details.data .scroll { max-height: 240px; overflow: auto; }
+
+/* year columns */
+.yc { position: relative; margin-top: 10px; display: grid; grid-template-columns: 28px 1fr; column-gap: 8px; }
+.yplot { position: relative; height: 200px; }
+.ygrid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--line); }
+.ygrid.base { border-top-color: var(--axis); }
+.ytick { position: absolute; left: -36px; width: 28px; text-align: right; font-size: 11px; color: var(--muted); transform: translateY(-50%); font-variant-numeric: tabular-nums; }
+.ycols { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.ycol { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; background: none; border: 0; padding: 0; cursor: default; height: 100%; }
+.yb { width: min(18px, 70%); background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; transition: opacity .1s; }
+.ycol.partial .yb { opacity: 0.5; }
+.ycol:hover .yb, .ycol:focus-visible .yb { filter: brightness(1.12); outline: 2px solid var(--ink); outline-offset: 1px; }
+.ycol:focus-visible { outline: none; }
+.yv { position: absolute; font-size: 12px; font-weight: 600; transform: translateY(-4px); white-space: nowrap; }
+.xrow { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 6px; }
+.xl { text-align: center; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: visible; font-variant-numeric: tabular-nums; }
+.xl span { display: inline-block; width: 0; }
+
+/* ranked bars */
+.rbars { display: flex; flex-direction: column; gap: 4px; }
+.rbar { display: grid; grid-template-columns: minmax(96px, 150px) 1fr; align-items: center; gap: 10px; text-align: left; background: none; border: 0; border-radius: 6px; padding: 4px 6px; cursor: pointer; width: 100%; }
+.rbar:hover { background: var(--accent-wash); }
+.rbar[disabled] { cursor: default; }
+.rbar[disabled]:hover { background: none; }
+.rl { font-size: 13px; color: var(--ink2); overflow-wrap: anywhere; }
+.rbar[aria-pressed="true"] .rl { color: var(--ink); font-weight: 600; }
+.rt { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rf { flex: none; height: 16px; width: calc((100% - 44px) * var(--p)); background: var(--accent); border-radius: 0 4px 4px 0; min-width: 2px; }
+.rbars.has-sel .rbar[aria-pressed="false"] .rf { background: var(--dim); }
+.rv { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* map */
+.mapcard { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+.mapnote { display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: var(--ink2); }
+.msize { display: flex; align-items: flex-end; gap: 14px; }
+.msize div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.msize i { display: block; border-radius: 50%; background: var(--accent); opacity: 0.75; }
+#map { width: 100%; display: flex; justify-content: center; }
+#map svg { display: block; max-width: 100%; height: auto; touch-action: pan-y; }
+@media (max-width: 860px) { .mapcard { grid-template-columns: 1fr; } }
+
+/* gallery */
+.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.gcard { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); min-width: 0; }
+.ghead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ghead .ga { font-weight: 650; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: var(--ink); }
+.ghead .ga:hover { color: var(--accent-ink); text-decoration: underline; }
+.gmeta { font-size: 12px; color: var(--ink2); }
+.gpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gpair figure.ph { width: 100%; }
+.galmore { border-top: 0; padding: 0; }
+
+/* table */
+.tcard { padding: 0; overflow: hidden; gap: 0; }
+.thead { padding: 18px 18px 12px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.copy { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink2); }
+.btn { height: 34px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--axis); background: var(--bg); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.tscroll { overflow-x: auto; }
+table.rec { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.rec th, table.rec td { padding: 10px 12px; text-align: left; border-top: 1px solid var(--line); vertical-align: middle; }
+table.rec th { font-size: 12px; font-weight: 600; color: var(--ink2); background: var(--bg); white-space: nowrap; }
+table.rec th.n, table.rec td.n { text-align: right; }
+table.rec th button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+table.rec th button:hover { color: var(--ink); }
+table.rec th[aria-sort="ascending"] button, table.rec th[aria-sort="descending"] button { color: var(--ink); }
+table.rec tbody tr.row:hover td { background: var(--accent-wash); }
+.addr { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; font-weight: 600; }
+.addr .chev { color: var(--muted); font-size: 11px; width: 10px; display: inline-block; transition: transform .1s; }
+.addr[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--accent-wash); color: var(--accent-ink); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.ph-state { font-size: 13px; color: var(--ink2); white-space: nowrap; }
+.lostc { font-weight: 650; }
+tr.detail td { background: var(--bg); padding: 16px 18px 20px; }
+.dgrid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 20px 28px; }
+@media (max-width: 760px) { .dgrid { grid-template-columns: 1fr; } }
+.facts { display: grid; grid-template-columns: repeat(2, auto); gap: 6px 18px; justify-content: start; margin: 0; }
+.facts dt { font-size: 12px; color: var(--ink2); }
+.facts dd { margin: 0; font-weight: 600; }
+.desc { margin-top: 12px; color: var(--ink); max-width: 60ch; }
+.desc.none { color: var(--muted); }
+.flag { margin-top: 12px; font-size: 13px; color: var(--ink2); border-left: 3px solid var(--axis); padding-left: 10px; max-width: 56ch; }
+.photos { display: flex; flex-wrap: wrap; gap: 16px; }
+figure.ph { margin: 0; width: 260px; max-width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.ph-link, .ph-empty { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; background: var(--surface); text-align: center; padding: 8px; font-size: 13px; text-decoration: none; }
+.ph-empty { color: var(--muted); border-style: dashed; }
+.ph-link span { color: var(--accent-ink); font-weight: 600; }
+.ph-link img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+figure.ph figcaption { font-size: 12px; color: var(--ink2); }
+.more { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 13px; }
+.more .lab { color: var(--ink2); margin-right: 4px; }
+.chip { padding: 2px 10px; border: 1px solid var(--axis); border-radius: 999px; text-decoration: none; color: var(--accent-ink); font-size: 13px; }
+.chip:hover { border-color: var(--accent); background: var(--accent-wash); }
+.empty { padding: 28px 18px; color: var(--ink2); }
+.showmore { padding: 14px 18px 18px; display: flex; align-items: center; gap: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink2); }
+.csvbox { width: 100%; height: 120px; margin: 0 18px 16px; max-width: calc(100% - 36px); font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); border: 1px solid var(--axis); border-radius: 6px; padding: 8px; }
+
+@media (max-width: 700px) {
+  table.rec thead { display: none; }
+  table.rec, table.rec tbody { display: block; }
+  table.rec tr.row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  table.rec tr.row td { display: block; border: 0; padding: 0; text-align: left; }
+  table.rec tr.row td::before { content: attr(data-l); display: block; font-size: 11px; color: var(--muted); }
+  table.rec tr.row td.c-addr { grid-column: 1 / -1; font-size: 16px; }
+  table.rec tr.row td.c-addr::before, table.rec tr.row td.c-nb::before { display: none; }
+  table.rec tr.row td.c-nb { grid-column: 1 / -1; color: var(--ink2); }
+  table.rec tr.detail { display: block; border-top: 1px solid var(--line); }
+  table.rec tr.detail td { display: block; padding: 14px 16px 18px; }
+}
+
+.notes { font-size: 14px; color: var(--ink2); display: flex; flex-direction: column; gap: 10px; }
+.notes h2 { color: var(--ink); font-size: 16px; }
+.notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); max-width: 260px; display: none; }
+#tip .tv { font-size: 14px; font-weight: 650; }
+#tip .tl { color: var(--ink2); }
+#tip .tk { display: inline-block; width: 12px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <h1>Cambridge downconversions</h1>
+    <p class="lede">Buildings in Cambridge where a permit took homes away but kept at least one, from 1996 to 2026.</p>
+    <p class="def">A downconversion is a permit that lowers a building's home count, such as a two-family house becoming a single-family house. Each row below is one address, with its permit details and photos from before and after.</p>
+  </header>
+
+  <section class="filters" aria-label="Filters">
+    <div class="field"><label for="f-q">Search address or description</label><input id="f-q" type="search" placeholder="e.g. Fayerweather"></div>
+    <div class="field"><label for="f-nb">Neighborhood</label><select id="f-nb"></select></div>
+    <div class="field"><span class="lab" id="f-yl">Permit year</span>
+      <div class="yr" role="group" aria-labelledby="f-yl"><select id="f-y0" aria-label="From year"></select><span>to</span><select id="f-y1" aria-label="To year"></select></div></div>
+    <div class="field"><label for="f-pat">What changed</label><select id="f-pat"></select></div>
+    <label class="check"><input id="f-both" type="checkbox"> Has before and after photos</label>
+    <div class="fstat"><span id="f-count" aria-live="polite"></span><button class="linkbtn" id="f-reset" hidden>Reset filters</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-gal">
+    <div><h2 id="h-gal">Before and after</h2><p class="sub" id="gal-sub"></p></div>
+    <div class="gal" id="gal"></div>
+    <div class="showmore galmore" id="galmore" hidden></div>
+  </section>
+
+  <section class="kpis" aria-label="Summary" id="kpis"></section>
+
+  <section class="card" aria-labelledby="h-year">
+    <div><h2 id="h-year">Homes lost each year</h2><p class="sub" id="year-sub"></p></div>
+    <div class="yc" id="yc"></div>
+    <details class="data"><summary>Show chart data</summary><div class="scroll" id="year-data"></div></details>
+  </section>
+
+  <div class="two">
+    <section class="card" aria-labelledby="h-pat">
+      <div><h2 id="h-pat">What changed</h2><p class="sub">Buildings by homes before and after. Select a bar to filter.</p></div>
+      <div class="rbars" id="pat-bars"></div>
+      <details class="data"><summary>Show chart data</summary><div id="pat-data"></div></details>
+    </section>
+    <section class="card" aria-labelledby="h-nb">
+      <div><h2 id="h-nb">Where it happened</h2><p class="sub">Homes lost by neighborhood. Select a bar to filter.</p></div>
+      <div class="rbars" id="nb-bars"></div>
+      <details class="data"><summary>Show chart data</summary><div id="nb-data"></div></details>
+    </section>
+  </div>
+
+  <section class="card mapcard" aria-labelledby="h-map">
+    <div class="mapnote">
+      <div><h2 id="h-map">Map of buildings</h2></div>
+      <p>Each dot is one building. Larger dots lost more homes. Hover a dot for its address, or select it to open its record below. There is no street basemap.</p>
+      <div class="msize" aria-hidden="true">
+        <div><i style="width:8px;height:8px"></i>1 home</div>
+        <div><i style="width:12px;height:12px"></i>2</div>
+        <div><i style="width:18px;height:18px"></i>4+</div>
+      </div>
+      <p>The table below lists every record, so the map is a visual aid only.</p>
+    </div>
+    <div id="map" aria-hidden="true"></div>
+  </section>
+
+  <section class="card tcard" id="records" aria-labelledby="h-rec">
+    <div class="thead">
+      <div><h2 id="h-rec">All records</h2><p class="sub" id="rec-sub"></p></div>
+      <div class="copy"><span id="copy-msg" aria-live="polite"></span><button class="btn" id="copy-csv" type="button">Copy as CSV</button></div>
+    </div>
+    <textarea id="csvbox" class="csvbox" hidden readonly aria-label="CSV text to copy"></textarea>
+    <div class="tscroll"><table class="rec" id="rec"></table></div>
+    <div class="showmore" id="showmore" hidden></div>
+  </section>
+
+  <section class="notes" aria-labelledby="h-notes">
+    <h2 id="h-notes">About these numbers</h2>
+    <ul>
+      <li><strong>What counts.</strong> The permit reduces a building's homes and at least one home remains. Demolitions with nothing left standing are not included.</li>
+      <li><strong>Homes lost</strong> is the net change reported for each address. Homes before and after are the permit's own counts.</li>
+      <li><strong>One row per address.</strong> If an address had several permits, their home counts are added together and the latest permit year is shown.</li>
+      <li><strong>2026 is a partial year.</strong> The permit file was exported on November 7, 2026, so the last column is paler.</li>
+      <li id="note-photos"></li>
+      <li id="note-flag"></li>
+    </ul>
+  </section>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function () {
+'use strict';
+var AX = 'https://api.axisgis.com/node/axisapi/document-view/CambridgeMA?path=Docs/Batch/BuildingPhoto/';
+var CM = 'https://www.cambridgema.gov/PropertyDatabase/Photos';
+var PARTIAL_YEAR = 2026;
+var PAGE = 25;
+var RAW = [["164 Allston St","Cambridgeport",2026,4,3,-1,0,"Conversion of 4-unit building to 2-unit building (split over 2 permits). This permit is for the first of two townhouses.",42.3587,-71.1084,"97-28","a%5C00%5C01%5C12%5C93.jpg","c/0135/img-2088_135693.jpg",["a%5C00%5C01%5C12%5C93.jpg","a%5C00%5C03%5C07%5C77.jpg"]],["166 Allston St","Cambridgeport",2026,3,2,-1,0,"Conversion of 4-unit building to 2-unit building (split over 2 permits). This permit is for the second of two townhouses.",42.3587,-71.1084,"97-28","a%5C00%5C01%5C12%5C93.jpg","c/0135/img-2088_135693.jpg",["a%5C00%5C01%5C12%5C93.jpg","a%5C00%5C03%5C07%5C77.jpg"]],["53 Crescent St","Baldwin",2026,2,1,-1,0,"Convert 2-family to single family",42.383,-71.114,"150-103","a%5C00%5C00%5C56%5C47.jpg","c/0131/img_0026_131939.jpg",["a%5C00%5C00%5C56%5C47.jpg","a%5C00%5C04%5C56%5C11.jpg"]],["43 Highland Ave","Mid-Cambridge",2026,3,2,-1,0,"Combine 2 units in 3-fam to convert to 2-fam",42.373,-71.1059,"112-18",null,"c/00/06/45/84.jpg",[]],["7 Fenno St","Neighborhood Nine",2026,2,1,-1,0,"Convert 2-family to single",42.3849,-71.131,"228-27","a%5C00%5C04%5C58%5C42.jpg",null,["a%5C00%5C04%5C58%5C42.jpg","a%5C00%5C06%5C08%5C74.jpg","a%5C00%5C00%5C04%5C53.jpg"]],["16 High St","Strawberry Hill",2025,2,1,-1,0,"Conversion of 2-family to single family. Per building plans, single family has 3 bedrooms(+ office).",42.3781,-71.1495,"253-52","a%5C00%5C03%5C96%5C16.jpg","c/0160/img_0011[1]_160666.jpg",["a%5C00%5C03%5C96%5C16.jpg","a%5C0134%5Cimg_1974_134282.jpg","a%5C00%5C00%5C16%5C54.jpg"]],["8 Holworthy Ter","Strawberry Hill",2025,2,1,-1,1,"Demolition of existing two-family;New construction of single family. Building plan shows 4 bedrooms.",42.3772,-71.1511,"254-68","a%5C00%5C03%5C94%5C86.jpg","c/0160/100_0017_160311.jpg",["a%5C00%5C03%5C94%5C86.jpg","a%5C00%5C05%5C92%5C35.jpg","a%5C0155%5C100_0031_155276.jpg","a%5C0160%5C100_0018_160310.jpg","a%5C0158%5C100_0005_158091.jpg","a%5C00%5C00%5C17%5C02.jpg"]],["316 Pearl St","Cambridgeport",2025,2,1,-1,0,"Convert two-family to single. Building plans show 3 bedrooms(+2 offices)",42.357,-71.1108,"98-20","a%5C00%5C03%5C16%5C44.jpg","c/0159/100_0025_159767.jpg",["a%5C00%5C03%5C16%5C44.jpg","a%5C00%5C06%5C22%5C06.jpg","a%5C0155%5C100_0020_155517.jpg","a%5C0155%5C100_0021_155516.jpg","a%5C0159%5C100_0023_159766.jpg","a%5C0154%5Cimg_0008%5B1%5D_154660.jpg","a%5C0154%5Cimg_5270%5B1%5D_154163.jpg","a%5C00%5C00%5C38%5C57.jpg","a%5C00%5C00%5C85%5C18.jpg"]],["178 Larch Rd","West Cambridge",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3806,-71.1438,"259-8","a%5C00%5C03%5C73%5C33.jpg","c/0154/img_0005[1]_154303.jpg",["a%5C00%5C03%5C73%5C33.jpg","a%5C00%5C03%5C79%5C14.jpg","a%5C00%5C04%5C27%5C67.jpg","a%5C00%5C00%5C19%5C02.jpg"]],["71 Pemberton St","North Cambridge",2024,3,2,-1,0,"Conversion of 3-family to 2-family",42.3908,-71.1263,"199-10",null,"c/0149/img_1934_149568.jpg",[]],["63 Clarendon Ave","North Cambridge",2024,2,1,-1,0,"Conversion of 2-family to single family",42.4008,-71.131,"184-3","a%5C00%5C04%5C41%5C88.jpg","c/0159/img_5893[1]_159840.jpg",["a%5C00%5C04%5C41%5C88.jpg","a%5C00%5C06%5C01%5C92.jpg","a%5C0139%5Cimg_0011_139768.jpg","a%5C0154%5Cimg_5328%5B1%5D_154989.jpg","a%5C00%5C00%5C62%5C81.jpg"]],["67 Inman St","Mid-Cambridge",2024,3,1,-2,0,"Conversion of 3-family to single family",42.3707,-71.1026,"114-93","a%5C00%5C01%5C73%5C71.jpg","c/0159/img_5937[1]_159981.jpg",["a%5C00%5C01%5C73%5C71.jpg","a%5C00%5C05%5C32%5C27.jpg","a%5C0147%5Cimg_0009_147672.jpg","a%5C0154%5Cimg_0008%5B1%5D_154772.jpg"]],["50 Sacramento St","Baldwin",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3825,-71.1148,"150-49","a%5C00%5C00%5C56%5C99.jpg","c/0161/img_0003[1]_161270.jpg",["a%5C00%5C00%5C56%5C99.jpg","a%5C00%5C04%5C57%5C30.jpg","a%5C00%5C04%5C94%5C61.jpg","a%5C0155%5Cimg_5362%5B1%5D_155060.jpg","a%5C0149%5Cimg_1878_149776.jpg","a%5C0149%5Cimg_4653_149505.jpg"]],["1 Lamont Ave","Mid-Cambridge",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3766,-71.1078,"140-28","a%5C00%5C00%5C53%5C62.jpg","c/0161/img_6098[1]_161030.jpg",["a%5C00%5C00%5C53%5C62.jpg","a%5C00%5C05%5C04%5C40.jpg","a%5C0147%5Cimg_0014_147851.jpg","a%5C0149%5Cimg_4773_149860.jpg","a%5C0151%5Cimg_2708_151281.jpg","a%5C0151%5Cimg_2709_151280.jpg"]],["11 Palermo St","Wellington-Harrington",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3719,-71.0929,"80-95","a%5C00%5C03%5C13%5C89.jpg","c/00/06/67/83.jpg",["a%5C00%5C03%5C13%5C89.jpg","a%5C00%5C00%5C31%5C25.jpg"]],["54 Antrim St","Mid-Cambridge",2024,2,1,-1,0,"Conversion of 2 units (single family +\"ADU\") to single family",42.3716,-71.1028,"114-46","a%5C00%5C01%5C73%5C07.jpg","c/0154/100_0006_154523.jpg",["a%5C00%5C01%5C73%5C07.jpg","a%5C00%5C06%5C18%5C51.jpg","a%5C0136%5Cimg_2212_136032.jpg","a%5C0151%5Cimg_2720_151306.jpg","a%5C0151%5Cimg_2721_151305.jpg","a%5C0154%5C100_0005_154522.jpg"]],["55 Harvey St","North Cambridge",2024,4,1,-3,0,"Conversion of 4-family to single family",42.3973,-71.1321,"191-8","a%5C00%5C01%5C03%5C41.jpg","c/0161/img_0017[1]_161130.jpg",["a%5C00%5C01%5C03%5C41.jpg","a%5C00%5C04%5C47%5C34.jpg","a%5C0153%5Cimg_5090_153928.jpg"]],["11 Goodman Rd","Mid-Cambridge",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3718,-71.1082,"115-88","a%5C00%5C00%5C45%5C36.jpg","c/0154/img_0013[1]_154882.jpg",["a%5C00%5C00%5C45%5C36.jpg","a%5C00%5C05%5C91%5C76.jpg","a%5C0146%5Cimg_4660_146775.jpg","a%5C0147%5Cimg_0003_147841.jpg"]],["18 Clinton St","Mid-Cambridge",2024,6,2,-4,0,"Conversion of 6-unit building to 2-family (original: #1:1-bdrm, #2-2,#3-2,#4-0,#5-1,#6-1, new:#A-5-bdrm,#B-3).",42.3686,-71.1057,"118-8","a%5C00%5C03%5C22%5C54.jpg","c/0160/img_5318_160983.jpg",["a%5C00%5C03%5C22%5C54.jpg","a%5C0135%5Cimg-1991_135651.jpg","a%5C0160%5Cimg_5319_160984.jpg","a%5C0156%5Cimg_5542%5B1%5D_156148.jpg","a%5C0149%5Cimg_4731_149031.jpg","a%5C0153%5Cimg_4881_153373.jpg","a%5C00%5C01%5C00%5C73.jpg"]],["161 Cushing St","Strawberry Hill",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3793,-71.1523,"258-49","a%5C00%5C03%5C95%5C77.jpg","a%5C0160%5C100_0022_160312.jpg",["a%5C00%5C03%5C95%5C77.jpg","a%5C0141%5Cimg_4187_141934.jpg","a%5C0138%5Cimg_0001_138036.jpg","a%5C0160%5C100_0021_160313.jpg","a%5C0160%5C100_0022_160312.jpg","a%5C0150%5Cimg_2134_150022.jpg","a%5C0150%5Cimg_2135_150021.jpg","a%5C0154%5C100_0041_154907.jpg","a%5C0154%5C100_0042_154906.jpg","a%5C00%5C00%5C18%5C75.jpg"]],["40 Royal Ave","West Cambridge",2024,3,1,-2,0,"Conversion of 3-family to single family",42.3825,-71.1321,"230-83","a%5C00%5C03%5C81%5C46.jpg","c/0159/img_0013[1]_159392.jpg",["a%5C00%5C03%5C81%5C46.jpg","a%5C00%5C03%5C40%5C81.jpg","a%5C0137%5Cimg_0007_137583.jpg","a%5C0149%5Cimg_0004_149670.jpg","a%5C0154%5Cimg_0003%5B1%5D_154625.jpg","a%5C00%5C00%5C06%5C61.jpg"]],["10 Howland St","Baldwin",2024,2,1,-1,0,"Conversion of 2-family to single family",42.3816,-71.1138,"149-33","a%5C00%5C00%5C56%5C07.jpg","c/0159/img_5909[1]_159847.jpg",["a%5C00%5C00%5C56%5C07.jpg","a%5C00%5C04%5C55%5C94.jpg","a%5C00%5C04%5C94%5C67.jpg","a%5C0155%5Cimg_5368%5B1%5D_155064.jpg","a%5C0150%5Cimg_4877_150555.jpg"]],["44 Pleasant St","Cambridgeport",2024,5,2,-3,0,"Planned conversion of 5-unit building to 2-family, see also CY2025 permit 1151624 for 2- to 4-unit alteration. Original 5 unit building: Unit 1 (1-bdrm), Unit 2 (2-bdrm, although used as 3-bdrm), Unit 3 (studio), Unit 4 (2-bdrm), Unit 5 (2-bdrm).",42.364,-71.1082,"104-88","a%5C00%5C04%5C11%5C18.jpg","c/0159/100_0031_159778.jpg",["a%5C00%5C04%5C11%5C18.jpg","a%5C0137%5Cimg_3780_137637.jpg","a%5C0155%5C100_0005_155594.jpg","a%5C0155%5C100_0006_155595.jpg","a%5C0159%5C100_0032_159777.jpg","a%5C0159%5C100_0033_159776.jpg","a%5C0158%5C100_0001_158109.jpg","a%5C0158%5C100_0002_158110.jpg","a%5C0158%5C100_0003_158112.jpg","a%5C0158%5C100_0004_158111.jpg","a%5C00%5C00%5C95%5C66.jpg"]],["35 Market St","The Port",2024,3,1,-2,1,"Demolition of 3-family;New construction of single family",42.3683,-71.0959,"77-33","a%5C00%5C03%5C69%5C49.jpg","c/0162/img_6231[1]_162322.jpg",["a%5C00%5C03%5C69%5C49.jpg","a%5C0134%5Cimg_3207_134710.jpg","a%5C00%5C06%5C52%5C70.jpg","a%5C0145%5Cimg_3927_145615.jpg","a%5C0146%5Cimg_1107_146619.jpg","a%5C0159%5Cimg_0007%5B1%5D_159042.jpg","a%5C0147%5Cimage1_147732.jpeg","a%5C0154%5Cimg_0001%5B1%5D_154763.jpg","a%5C00%5C00%5C29%5C06.jpg"]],["95 Irving St","Mid-Cambridge",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3782,-71.1111,"146-81","a%5C00%5C01%5C84%5C49.jpg","c/0159/img_0004[1]_159410.jpg",["a%5C00%5C01%5C84%5C49.jpg","a%5C00%5C04%5C52%5C73.jpg","a%5C0153%5Cimg_0003_153349.jpg","a%5C0154%5Cimg_0007%5B1%5D_154628.jpg"]],["35 Kinnaird St","Riverside",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3659,-71.1093,"123-5","a%5C00%5C00%5C48%5C50.jpg","c/0153/img_3645_153696.jpg",["a%5C00%5C00%5C48%5C50.jpg","a%5C00%5C01%5C77%5C31.jpg","a%5C00%5C02%5C22%5C06.jpg","a%5C00%5C05%5C04%5C76.jpg","a%5C0138%5Cimg-6809_138926.jpg","a%5C0153%5Cimg_3644_153695.jpg"]],["26 Sherman St","Neighborhood Nine",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3853,-71.1301,"205-32","a%5C00%5C03%5C39%5C57.jpg","c/0154/img_0006[1]_154323.jpg",["a%5C00%5C03%5C39%5C57.jpg","a%5C0133%5Cimg_0025_133763.jpg","a%5C0151%5Cimg_0004_151116.jpg","a%5C00%5C00%5C73%5C02.jpg"]],["23 Hunting St","Wellington-Harrington",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3734,-71.0911,"36-13","a%5C00%5C03%5C14%5C43.jpg","c/0160/100_0001_160292.jpg",["a%5C00%5C03%5C14%5C43.jpg","a%5C0137%5Cimg_1314_137458.jpg","a%5C0146%5Cimg_4642_146551.jpg","a%5C0146%5Cimg_4643_146552.jpg","a%5C0147%5Cimg_1203_147109.jpg","a%5C0160%5C100_0002_160291.jpg","a%5C0154%5C100_0018_154535.jpg","a%5C0154%5C100_0019_154536.jpg","a%5C00%5C00%5C23%5C89.jpg"]],["122 Spring St","East Cambridge",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3696,-71.0839,"26-19","a%5C00%5C05%5C41%5C60.jpg","c/0156/100_0001_156576.jpg",["a%5C00%5C05%5C41%5C60.jpg","a%5C0155%5C100_0079_155755.jpg","a%5C0155%5C100_0081_155756.jpg","a%5C00%5C00%5C19%5C40.jpg"]],["358 Western Ave","Riverside",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3642,-71.1143,"129-20",null,"c/0162/img_6219[1]_162300.jpg",[]],["213 Fayerweather St","Neighborhood Nine",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3855,-71.1332,"262-40","a%5C00%5C05%5C86%5C02.jpg","c/0160/100_0052_160959.jpg",["a%5C00%5C05%5C86%5C02.jpg","a%5C0160%5C100_0051_160958.jpg","a%5C0150%5Cimg_0004_150410.jpg","a%5C0154%5Cimg_0018%5B1%5D_154316.jpg","a%5C00%5C00%5C20%5C95.jpg"]],["8 Holly Ave","Neighborhood Nine",2023,3,2,-1,0,"Conversion of 3-family to 2-family",42.3827,-71.1296,"227-102",null,"c/0161/100_0004_161707.jpg",[]],["415 Broadway","Mid-Cambridge",2023,3,1,-2,0,"Conversion of 3-family to single family",42.3727,-71.1089,"139-36","a%5C00%5C00%5C52%5C90.jpg","c/0154/img_0001[1]_154318.jpg",["a%5C00%5C00%5C52%5C90.jpg","a%5C00%5C03%5C43%5C43.jpg","a%5C00%5C05%5C02%5C32.jpg","a%5C0145%5Cimg_0012_145877.jpg","a%5C0149%5Cimg_0013_149197.jpg"]],["100 Henry St","Cambridgeport",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3563,-71.1105,"98-47","a%5C00%5C04%5C60%5C82.jpg","c/0154/100_0016_154533.jpg",["a%5C00%5C04%5C60%5C82.jpg","a%5C0146%5Cimg_1150_146822.jpg","a%5C0146%5Cimg_1151_146823.jpg","a%5C0146%5Cimg_1152_146824.jpg","a%5C0146%5Cimg_1153_146825.jpg","a%5C0150%5Cimg_2252_150316.jpg","a%5C0150%5Cimg_2253_150315.jpg","a%5C0150%5Cimg_2254_150314.jpg","a%5C0154%5C100_0015_154532.jpg","a%5C0154%5C100_0017_154534.jpg","a%5C00%5C00%5C38%5C75.jpg"]],["66 MIddlesex St","North Cambridge",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3914,-71.1303,"195-27","a%5C00%5C04%5C01%5C59.jpg","c/0156/img_0001[1]_156397.jpg",["a%5C00%5C04%5C01%5C59.jpg","a%5C0137%5Cimg_2586_137802.jpg","a%5C0151%5Cimg_0009_151232.jpg","a%5C00%5C00%5C69%5C50.jpg"]],["48 Murray Hill Rd","North Cambridge",2023,2,1,-1,0,"Conversion of 2-family to single family",42.4019,-71.1343,"185-27","a%5C00%5C03%5C35%5C47.jpg","c/0149/img_4728_149754.jpg",["a%5C00%5C03%5C35%5C47.jpg","a%5C00%5C06%5C29%5C63.jpg","a%5C0146%5Cimg_4104_146919.jpg","a%5C00%5C00%5C63%5C37.jpg"]],["19 Cottage Park Ave","North Cambridge",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3992,-71.1335,"189-39","a%5C00%5C03%5C93%5C77.jpg","c/0159/img_0006[1]_159422.jpg",["a%5C00%5C03%5C93%5C77.jpg","a%5C0137%5Cimg_2575_137792.jpg","a%5C0159%5Cimg_0007%5B1%5D_159420.jpg","a%5C0159%5Cimg_0008%5B1%5D_159421.jpg","a%5C0151%5Cimg_0006_151160.jpg","a%5C00%5C00%5C65%5C17.jpg"]],["492 Putnam Ave","Cambridgeport",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3584,-71.1097,"102-121",null,"c/0156/img_5641[1]_156870.jpg",[]],["10 Prentiss St","Baldwin",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3845,-71.1187,"154-80","a%5C00%5C03%5C21%5C95.jpg","c/0149/img_0003_149218.jpg",["a%5C00%5C03%5C21%5C95.jpg","a%5C00%5C03%5C34%5C67.jpg","a%5C00%5C06%5C30%5C74.jpg","a%5C0145%5Cimg_0009_145962.jpg","a%5C00%5C00%5C58%5C23.jpg"]],["5 Kinnaird St","Riverside",2023,4,3,-1,1,"New construction of single family in rear of lot with existing single family;Conversion of 3-family to single family. Related permit is for remodeling the single family.",42.3644,-71.1091,"125-30",null,"c/0156/125-30_156235.jpg",[]],["42-44 Winslow St","Neighborhood Nine",2023,3,2,-1,0,"Conversion of 3-family to 2-family",42.3851,-71.129,"206-44","a%5C00%5C03%5C38%5C63.jpg","c/0155/100_0036_155231.jpg",["a%5C00%5C03%5C38%5C63.jpg","a%5C00%5C06%5C08%5C31.jpg","a%5C0136%5Cimg_0005_136102.jpg","a%5C0155%5C100_0037_155230.jpg","a%5C0149%5Cimg_1896_149611.jpg","a%5C0150%5Cimg_2469_150295.jpg","a%5C0150%5Cimg_2470_150296.jpg","a%5C00%5C00%5C73%5C43.jpg"]],["186 Holworthy St","Strawberry Hill",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3797,-71.1516,"258-38","a%5C00%5C05%5C45%5C35.jpg","c/0159/100_0003_159372.jpg",["a%5C00%5C05%5C45%5C35.jpg","a%5C0150%5Cimg_0009_150695.jpg","a%5C0159%5C100_0002_159371.jpg","a%5C0153%5Cimg_5202_153235.jpg","a%5C0154%5Cimg_0001%5B1%5D_154609.jpg","a%5C00%5C00%5C18%5C69.jpg"]],["180 Holworthy","Strawberry Hill",2023,2,1,-1,0,"Conversion of 2-family to single family",42.3794,-71.1517,"258-37","a%5C00%5C03%5C95%5C81.jpg","c/0159/100_0048_159172.jpg",["a%5C00%5C03%5C95%5C81.jpg","a%5C0138%5Cimg_0010_138045.jpg","a%5C0159%5C100_0047_159171.jpg","a%5C0150%5Cimg_0008_150694.jpg","a%5C0153%5Cimg_5203_153236.jpg","a%5C0154%5Cimg_0002%5B1%5D_154612.jpg","a%5C00%5C00%5C18%5C68.jpg"]],["112 Hampshire St","The Port",2022,2,1,-1,0,"Conversion of 2-family to single family (detached condo)",42.3696,-71.096,"77-84",null,"c/0151/img_2951_151771.jpg",[]],["114 Prospect St","The Port",2022,7,2,-5,0,"Conversion of 7-unit building to 2-family",42.3678,-71.1019,"90-19",null,"c/0156/90-19_156199.jpg",[]],["89 Third St","East Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3701,-71.0802,"24-83","a%5C00%5C02%5C91%5C83.jpg","c/0159/img_0001[1]_159427.jpg",["a%5C00%5C02%5C91%5C83.jpg","a%5C00%5C06%5C27%5C01.jpg","a%5C0145%5Cimg_3930_145617.jpg","a%5C0146%5Cimg_1016_146315.jpg","a%5C0150%5Cimg_2119_150007.jpg","a%5C0154%5C100_0040_154559.jpg","a%5C00%5C00%5C86%5C23.jpg"]],["12 Fayette St","Mid-Cambridge",2022,4,3,-1,1,"New construction of single family in rear of lot with renovated single family;Conversion of 3-family to single family",42.3716,-71.1039,"114-4",null,"c/0151/img_0001_151747.jpg",[]],["882 Main St","The Port",2022,6,3,-3,0,"Conversion of 6-unit building to 3-family",42.3633,-71.0992,"70-97","a%5C00%5C04%5C26%5C41.jpg","c/0145/img_4592_145836.jpg",["a%5C00%5C04%5C26%5C41.jpg","a%5C0135%5Cimg-1999_135662.jpg","a%5C00%5C01%5C07%5C84.jpg"]],["80 Alpine St","Neighborhood Nine",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3856,-71.1369,"262-60","a%5C00%5C02%5C17%5C09.jpg","c/0160/100_0057_160965.jpg",["a%5C00%5C02%5C17%5C09.jpg","a%5C00%5C03%5C39%5C33.jpg","a%5C0135%5Cimg_0019_135604.jpg","a%5C0145%5Cimg_0878_145940.jpg","a%5C0160%5C100_0058_160964.jpg","a%5C0149%5Cimg_1909_149817.jpg","a%5C0149%5Cimg_1910_149816.jpg","a%5C00%5C00%5C21%5C09.jpg"]],["123 Hancock St","Mid-Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3697,-71.1075,"116-31",null,"c/0161/img_6138[1]_161834.jpg",[]],["75 Orchard St","North Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3925,-71.1217,"180-55","a%5C00%5C03%5C45%5C68.jpg","c/0149/img_2075_149968.jpg",["a%5C00%5C03%5C45%5C68.jpg","a%5C00%5C05%5C15%5C11.jpg","a%5C0146%5Cimg_0916_146113.jpg","a%5C0146%5Cimg_0918_146114.jpg","a%5C0149%5Cimg_2073_149969.jpg","a%5C0149%5Cimg_2074_149967.jpg","a%5C00%5C00%5C91%5C60.jpg"]],["30 Crescent St","Baldwin",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3829,-71.1149,"150-118","a%5C00%5C00%5C56%5C58.jpg","c/0149/img_0007_149065.jpg",["a%5C00%5C00%5C56%5C58.jpg","a%5C00%5C04%5C81%5C52.jpg","a%5C00%5C04%5C56%5C09.jpg","a%5C00%5C06%5C35%5C82.jpg","a%5C0142%5Cimg_0016_142992.jpg","a%5C0142%5Cimg_0017_142991.jpg","a%5C0145%5Cimg_0017_145333.jpg"]],["66-68 Banks St","Riverside",2022,5,4,-1,0,"Conversion of 5-unit building to 4-unit building due to combination of two units",42.3691,-71.1146,"132-59","a%5C00%5C00%5C98%5C91.jpg","c/00/04/50/83.jpg",["a%5C00%5C00%5C98%5C91.jpg"]],["15-17 Pleasant St","Cambridgeport",2022,5,4,-1,0,"Conversion of 4-family to 3-family on a lot with an existing single family (#315 Franklin)",42.3656,-71.1066,"119-53",null,"c/0155/100_0002_155591.jpg",[]],["58 Lexington Ave","West Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3777,-71.1404,"247-110","a%5C00%5C03%5C71%5C77.jpg","c/0161/img_0001[1]_161046.jpg",["a%5C00%5C03%5C71%5C77.jpg","a%5C0134%5Cimg_2038_134434.jpg","a%5C0149%5Cimg_4601_149102.jpg","a%5C0153%5Cimg_0010_153335.jpg","a%5C00%5C00%5C12%5C46.jpg"]],["58 Antrim St","Mid-Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3716,-71.1027,"114-47","a%5C00%5C01%5C73%5C08.jpg","c/0155/img_5474[1]_155433.jpg",["a%5C00%5C01%5C73%5C08.jpg","a%5C00%5C03%5C42%5C49.jpg","a%5C0137%5Cimg_1349_137626.jpg","a%5C0142%5C8_142831.jpg","a%5C0145%5Cimg_3936_145621.jpg","a%5C0149%5Cimg_4798_149931.jpg"]],["203 Pearl St","Cambridgeport",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3598,-71.1081,"102-85",null,"c/0151/img_4986_151741.jpg",[]],["26 Maple Ave","Mid-Cambridge",2022,5,4,-1,0,"Conversion of 5-unit building to 4-unit building by combining two units",42.3728,-71.1043,"113-70",null,"c/00/05/69/21.jpg",[]],["221 Columbia St","The Port",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3687,-71.097,"86-43","a%5C00%5C03%5C73%5C98.jpg","c/0156/img_5650[1]_156876.jpg",["a%5C00%5C03%5C73%5C98.jpg","a%5C0142%5Cimg_3556_142763.jpg","a%5C0145%5Cimg_0009_145937.jpg","a%5C0149%5Cimg_0011_149176.jpg","a%5C00%5C00%5C33%5C18.jpg"]],["25 Jackson St","North Cambridge",2022,2,1,-1,1,"New construction of single family in front of lot;Demolition of 2-family",42.3944,-71.1351,"193-57",null,"c/0156/img_0001[1]_156851.jpg",[]],["50 Gold Star Rd","North Cambridge",2022,2,1,-1,0,"Conversion of 2-family to single family",42.3993,-71.1302,"184-120","a%5C00%5C03%5C73%5C96.jpg","c/0146/img_4057_146734.jpg",["a%5C00%5C03%5C73%5C96.jpg","a%5C0145%5Cimg_0814_145741.jpg","a%5C0133%5Cimg_0007_133932.jpg","a%5C00%5C00%5C62%5C35.jpg"]],["24 Greenough Ave","Mid-Cambridge",2022,4,1,-3,0,"Conversion of 4-family into single family",42.3735,-71.1064,"112-13","a%5C00%5C04%5C49%5C44.jpg","c/0159/img_5944[1]_159986.jpg",["a%5C00%5C04%5C49%5C44.jpg","a%5C0153%5Cimg_0002_153348.jpg","a%5C00%5C00%5C98%5C03.jpg"]],["50 Magoun St","North Cambridge",2021,2,1,-1,0,"Conversion of 2-family to single family",42.3992,-71.1351,"189-22","a%5C00%5C05%5C42%5C72.jpg","c/0151/img_0001_151138.jpg",["a%5C00%5C05%5C42%5C72.jpg","a%5C0141%5Cimg_0015_141377.jpg","a%5C00%5C00%5C65%5C03.jpg"]],["332 Columbia St","Wellington-Harrington",2021,3,2,-1,0,"convert 3-fam to 2-fam",42.3712,-71.0953,"79-105","a%5C00%5C03%5C74%5C82.jpg","c/0141/img_4179_141339.jpg",["a%5C00%5C03%5C74%5C82.jpg","a%5C00%5C05%5C01%5C35.jpg","a%5C0137%5Cimg_1247_137086.jpg","a%5C00%5C00%5C30%5C11.jpg"]],["19 Florence St","Cambridgeport",2021,2,1,-1,0,"Conversion of 2-family to single family",42.3586,-71.1137,"100-36",null,"c/0147/image_147733.jpeg",[]],["17 Chilton St","West Cambridge",2021,3,2,-1,0,"Conversion of 3-family into 2 side by side townhouses",42.3819,-71.1383,"233-111",null,"c/0151/img_0004_151636.jpg",[]],["33 Pemberton St","North Cambridge",2021,3,2,-1,0,"Conversion of 3-family to 2-family",42.3917,-71.1256,"199-92",null,"c/0147/img_0003_147236.jpg",[]],["40 Blakeslee St","West Cambridge",2021,2,1,-1,0,"Conversion of 2-family to single family",42.381,-71.1349,"232-65","a%5C00%5C03%5C72%5C41.jpg","c/0149/img_4602_149103.jpg",["a%5C00%5C03%5C72%5C41.jpg","a%5C0134%5Cimg_0673_134065.jpg","a%5C0141%5Cimg_0004_141254.jpg","a%5C0145%5Cimg_3879_145459.jpg","a%5C00%5C00%5C07%5C42.jpg"]],["141 Fayerweather St","West Cambridge",2021,2,1,-1,0,"convert 2-fam to single",42.3843,-71.1362,"263-26","a%5C00%5C02%5C93%5C21.jpg","c/0161/img_0002[1]_161395.jpg",["a%5C00%5C02%5C93%5C21.jpg","a%5C00%5C06%5C29%5C26.jpg","a%5C0139%5Cimg_2863_139422.jpg","a%5C0140%5Cimg_3227_140511.jpg","a%5C0150%5Cimg_2283_150278.jpg","a%5C0150%5Cimg_2284_150279.jpg","a%5C00%5C00%5C21%5C75.jpg"]],["2 William St","Cambridgeport",2021,6,5,-1,0,"Conversion of 2-family in front of lot to single family (new add is 2 William St, old add was 4 William St)",42.3628,-71.1052,"106-8 (now 106-129)",null,"c/0151/img_4965_151587.jpg",[]],["383 Windsor St","Wellington-Harrington",2021,4,3,-1,0,"Conversion of 4-family to 3-family",42.3705,-71.0943,"79-77",null,null,[]],["134 Hancock St","Mid-Cambridge",2021,4,2,-2,0,"Conversion of 4-family into 2-family (2 townhouses)",42.3698,-71.107,"117-77",null,"c/0149/117-77_149978.jpg",[]],["37 Hubbard Ave","West Cambridge",2021,3,2,-1,0,"Conversion of 2-family to single family (front house) in lot with existing single family in rear",42.3887,-71.1271,"202-36",null,"c/0146/202-36%20bldg2_146264.jpg",[]],["14 Rutland St","Neighborhood Nine",2021,4,2,-2,0,"Conversion of 4-family to 2-family",42.3811,-71.1212,"173-14",null,"c/0156/img_0001[1]_156826.jpg",[]],["308 Pearl St","Cambridgeport",2021,4,2,-2,0,"Conversion of 4-family to 2-family",42.3571,-71.1105,"98-58",null,"c/0146/img_1077_146536.jpg",[]],["44 Kinnaird St","Riverside",2021,2,1,-1,0,"Conversion of 2-family to single family",42.3661,-71.1091,"124-33","a%5C00%5C00%5C48%5C78.jpg","c/0153/img_4863_153356.jpg",["a%5C00%5C00%5C48%5C78.jpg","a%5C00%5C03%5C65%5C29.jpg","a%5C00%5C05%5C06%5C18.jpg","a%5C0135%5Cimg_0003_135175.jpg","a%5C0140%5Cimg_0013_140467.jpg","a%5C0140%5Cimg_0013_140468.jpg","a%5C0140%5Cimg_0014_140466.jpg"]],["13 Hazel St","Neighborhood Nine",2021,2,1,-1,0,"convert 2-family to single",42.3861,-71.1346,"262-10","a%5C00%5C04%5C57%5C81.jpg","c/0155/100_0004_155089.jpg",["a%5C00%5C04%5C57%5C81.jpg","a%5C0141%5Cimg_0004_141630.jpg","a%5C0139%5Cimg_0005%20%281%29_139847.jpg","a%5C0155%5C100_0005_155088.jpg","a%5C00%5C00%5C20%5C30.jpg"]],["8 Greenough Ave","Mid-Cambridge",2021,2,1,-1,0,"Conversion of 2-family to single family",42.3733,-71.1059,"112-123","a%5C00%5C00%5C44%5C02.jpg","c/0149/img_0003_149206.jpg",["a%5C00%5C00%5C44%5C02.jpg","a%5C00%5C03%5C43%5C78.jpg","a%5C00%5C05%5C05%5C01.jpg","a%5C0141%5Cimg_0046_141130.jpg","a%5C0145%5Cimg_0003_145263.jpg"]],["15 Gurney St","North Cambridge",2021,2,1,-1,1,"New construction of single family;Demolition of 2-family (demo permit says 1 unit demolished, but other documents suggest the original unit count was 2 e.g. CHC application)",42.3801,-71.1385,"236-109","a%5C00%5C03%5C05%5C94.jpg","c/0154/100_0004_154298.jpg",["a%5C00%5C03%5C05%5C94.jpg","a%5C00%5C03%5C18%5C84.jpg","a%5C0139%5Cimg_2858_139416.jpg","a%5C0136%5Cimg_0102_136791.jpg","a%5C0141%5Cimg_0011_141216.jpg","a%5C0141%5Cimg_0012_141217.jpg","a%5C0141%5Cimg_0013_141218.jpg","a%5C0145%5Cimg_0019_145487.jpg","a%5C0138%5Cimg_0040_138293.jpg","a%5C00%5C06%5C56%5C69.jpg","a%5C0154%5C100_0005_154297.jpg","a%5C0154%5C100_0006_154296.jpg","a%5C00%5C00%5C10%5C05.jpg"]],["50 Jay St","Riverside",2021,3,1,-2,0,"Conversion of 3-family to single family (46 Jay St). Related permit is for demolition associated with the renovation.",42.3661,-71.1097,"123-22",null,"c/0151/img_3031_151937.jpg",[]],["336 Pearl St","Cambridgeport",2021,3,2,-1,0,"Convert 3 family to 2 family",42.3565,-71.1113,"98-7",null,"c/0147/img_1230_147298.jpg",[]],["87 Pearl St","Cambridgeport",2021,5,2,-3,0,"Demolition of building with 3 residential units (original building had addresses of 87 Pearl and 2 William). Prior unit count of 5 is based on summing across the lot (3-unit building & 2-family at 4 William St)",42.357,-71.1106,"106-9 (now 106-129)",null,null,[]],["27 Kelly Rd","Cambridgeport",2020,2,1,-1,0,"Conversion of 2-family to single family",42.3626,-71.1093,"104-71","a%5C00%5C03%5C18%5C61.jpg","c/0140/img_3286_140968.jpg",["a%5C00%5C03%5C18%5C61.jpg","a%5C00%5C05%5C54%5C14.jpg","a%5C0138%5Cimg-6593_138753.jpg","a%5C0139%5Cimg-6909_139131.jpg","a%5C0133%5Cimg_1869_133313.jpg","a%5C00%5C00%5C42%5C25.jpg"]],["60 Stearns St","North Cambridge",2020,2,1,-1,1,"Demolition of 2-family;New construction of single family",42.3859,-71.1296,"205-23","a%5C00%5C03%5C38%5C73.jpg","c/0140/img_3234_140518.jpg",["a%5C00%5C03%5C38%5C73.jpg","a%5C0138%5Cimg_2828_138782.jpg","a%5C0132%5Cimg_0001_132823.jpg","a%5C00%5C00%5C72%5C93.jpg"]],["31 Maple Ave, Unit 1","Mid-Cambridge",2020,3,2,-1,0,"Convert 3 family to 2 family",42.3732,-71.1043,"112-61","a%5C00%5C00%5C44%5C41.jpg","c/0142/img_0015_142009.jpg",["a%5C00%5C00%5C44%5C41.jpg","a%5C00%5C03%5C72%5C32.jpg","a%5C00%5C05%5C55%5C08.jpg","a%5C0136%5Cimg_2372_136975.jpg","a%5C0139%5Cimg-7244_139494.jpg"]],["160 Norfolk St","The Port",2019,6,2,-4,0,"Luke House, conversion of 6-family to 2-family",42.368,-71.0992,"88-50",null,"c/0146/img_1088_146557.jpg",[]],["30 Bellis Circle","Neighborhood Nine",2019,2,1,-1,0,"Conversion of 2-family to single family",42.39,-71.134,"271-25","a%5C00%5C03%5C93%5C31.jpg",null,["a%5C00%5C03%5C93%5C31.jpg","a%5C0134%5Cimg_3177_134518.jpg","a%5C0135%5Cimg_3466_135888.jpg","a%5C00%5C00%5C23%5C14.jpg"]],["78 Holworthy St","Strawberry Hill",2019,2,1,-1,0,"Convert 2-family to single family",42.3767,-71.1505,"254-31",null,"c/0147/img_0002_147375.jpg",[]],["27 Walden St","North Cambridge",2019,4,2,-2,0,"Conversion of 4-family to 2-family",42.3904,-71.1241,"199-73",null,"c/0161/img_0017[1]_161233.jpg",[]],["58 Garfield St","Baldwin",2019,2,1,-1,0,"Convert 2-family to single",42.3836,-71.1172,"155-8","a%5C00%5C04%5C96%5C63.jpg","c/0140/img_3279_140961.jpg",["a%5C00%5C04%5C96%5C63.jpg","a%5C00%5C04%5C57%5C09.jpg","a%5C0138%5Cimg_2716_138227.jpg","a%5C0133%5Cimg_0004_133006.jpg","a%5C00%5C00%5C58%5C55.jpg"]],["234 Chestnut St","Cambridgeport",2019,3,1,-2,0,"Convert 3-family to single-family (234 Chestnut)",42.3589,-71.113,"100-52",null,"c/0139/100-52%20bldg%201_139155.jpg",[]],["32 Roberts Rd","Mid-Cambridge",2019,3,2,-1,0,"Conversion of 3-family to 2-family. Original unit count consistent with property database.",42.3766,-71.1083,"140-80",null,"c/0147/img_1238_147325.jpg",[]],["32 Vineyard St","Strawberry Hill",2019,2,1,-1,0,"Conversion of 2-family into single family",42.3788,-71.1535,"256-34",null,"c/0142/256-34%20bldg2_142883.jpg",[]],["35 Standish St.","West Cambridge",2019,2,1,-1,0,"Conversion of 2-family to single family",42.3822,-71.139,"233-171","a%5C00%5C04%5C37%5C04.jpg","c/0149/img_0009_149226.jpg",["a%5C00%5C04%5C37%5C04.jpg","a%5C0136%5Cimg_0004_136052.jpg","a%5C0141%5Cimg_0012_141466.jpg","a%5C0145%5Cimg_0008_145274.jpg","a%5C0138%5Cimg_0014_138098.jpg","a%5C00%5C00%5C07%5C98.jpg"]],["46 Mt. Vernon St","Neighborhood Nine",2019,7,3,-4,0,"Conversion of 6-family to 2-family on lot with existing single family (46R)",42.387,-71.1213,"177-6",null,null,[]],["53 Henry St","Cambridgeport",2019,2,1,-1,0,"Conversion of 2-unit building to 1-unit building",42.3555,-71.1086,"65-11","a%5C00%5C02%5C78%5C98.jpg","c/0136/img_1164_136534.jpg",["a%5C00%5C02%5C78%5C98.jpg","a%5C00%5C02%5C79%5C01.jpg","a%5C00%5C05%5C66%5C46.jpg","a%5C00%5C05%5C94%5C13.jpg","a%5C00%5C00%5C27%5C17.jpg"]],["384 Broadway","Mid-Cambridge",2019,2,1,-1,0,"Conversion of 2-family to single family",42.3711,-71.106,"115-11","a%5C00%5C00%5C44%5C95.jpg","c/0139/img-7332_139557.jpg",["a%5C00%5C00%5C44%5C95.jpg","a%5C00%5C03%5C43%5C38.jpg","a%5C0136%5Cimg_2303_136429.jpg","a%5C0138%5Cimg-6329_138520.jpg","a%5C0138%5Cimg_0004_138372.jpg"]],["33 Parker St","Neighborhood Nine",2019,3,2,-1,0,"Conversion of 3-family to 2-family",42.3799,-71.1286,"225-32",null,"c/00/06/04/81.jpg",[]],["34 Fairfield St","Neighborhood Nine",2019,2,1,-1,0,"Existing 2-family converted to single family",42.3916,-71.1267,"198-72","a%5C00%5C03%5C95%5C19.jpg","c/0138/img_0009_138134.jpg",["a%5C00%5C03%5C95%5C19.jpg","a%5C0136%5Cimg_0002_136146.jpg","a%5C0133%5Cimg_0454_133166.jpg","a%5C00%5C00%5C70%5C49.jpg"]],["47 Granite St","Cambridgeport",2019,2,1,-1,0,"Conversion of 2-family to single-family.",42.3565,-71.1127,"99-18",null,"c/0143/img_0002_143374.jpg",[]],["15 Vincent St","Neighborhood Nine",2019,2,1,-1,1,"Demolition of 2-family building;New construction of attached single family",42.3875,-71.1256,"201.5-36",null,"c/0139/201.5-36_139234.jpg",[]],["29 Winslow St","Neighborhood Nine",2019,6,2,-4,0,"Conversion of 6-family to 2 family",42.3848,-71.1295,"206-48",null,"c/0149/img_0003_149453.jpg",[]],["42 Blakeslee St","West Cambridge",2019,2,1,-1,0,"Conversion of 2-family to single family",42.3811,-71.1349,"232-56","a%5C00%5C03%5C72%5C40.jpg","c/0141/img_0015_141469.jpg",["a%5C00%5C03%5C72%5C40.jpg","a%5C0134%5Cimg_0674_134066.jpg","a%5C0136%5Cimg_0017_136183.jpg","a%5C0138%5Cimg_0001_138112.jpg","a%5C0132%5Cimg_0008_132922.jpg","a%5C00%5C00%5C07%5C37.jpg"]],["283 Upland Road","Neighborhood Nine",2019,3,2,-1,0,"Convert 3-family to 2-family by combining 2 units",42.3848,-71.128,"206-31-3",null,null,[]],["601 Franklin St","Riverside",2019,2,1,-1,0,"Conversion of 2-family to single family",42.3686,-71.1128,"121-44","a%5C00%5C00%5C47%5C30.jpg","c/0136/img_1117_136306.jpg",["a%5C00%5C00%5C47%5C30.jpg","a%5C00%5C03%5C65%5C06.jpg","a%5C00%5C05%5C05%5C52.jpg","a%5C00%5C05%5C17%5C75.jpg"]],["120 Norfolk St","The Port",2018,3,2,-1,0,"Convert 3-family to 2-family",42.367,-71.0998,"89-49",null,"c/0139/img-7058_139731.jpg",[]],["45-47 Hubbard Ave","Neighborhood Nine",2018,2,1,-1,0,"",42.3888,-71.1275,"202-39","a%5C00%5C03%5C44%5C08.jpg","c/00/06/54/94.jpg",["a%5C00%5C03%5C44%5C08.jpg","a%5C00%5C06%5C41%5C67.jpg","a%5C0147%5Cimg_4167_147418.jpg","a%5C0133%5Cimg_0442_133169.jpg","a%5C00%5C00%5C72%5C17.jpg"]],["120 Magazine St","Cambridgeport",2018,2,1,-1,0,"",42.3595,-71.1105,"102-137","a%5C00%5C03%5C16%5C97.jpg","c/0138/img_0015_138117.jpg",["a%5C00%5C03%5C16%5C97.jpg","a%5C00%5C05%5C62%5C69.jpg","a%5C0135%5Cimg_0003_135727.jpg","a%5C00%5C06%5C06%5C09.jpg","a%5C00%5C06%5C57%5C75.jpg","a%5C00%5C00%5C85%5C30.jpg"]],["65 Griswold St","Cambridge Highlands",2018,2,1,-1,0,"Convert 2-family to single",42.3927,-71.1563,"267B-175","a%5C00%5C03%5C94%5C56.jpg","c/0136/img_3641_136569.jpg",["a%5C00%5C03%5C94%5C56.jpg","a%5C00%5C06%5C03%5C04.jpg","a%5C0132%5Cimg_2941_132308.jpg"]],["97 Pemberton St","North Cambridge",2018,2,1,-1,0,"Convert 2-family to single",42.3903,-71.1269,"199-1","a%5C00%5C03%5C77%5C66.jpg","c/0136/img_0003_136147.jpg",["a%5C00%5C03%5C77%5C66.jpg","a%5C00%5C03%5C70%5C36.jpg","a%5C00%5C05%5C49%5C64.jpg","a%5C00%5C00%5C92%5C26.jpg"]],["27 St Sauveur St","Strawberry Hill",2018,3,2,-1,0,"",42.3772,-71.153,"256-31",null,"c/0141/256-31_141792.jpg",[]],["19 Fayette St","Mid-Cambridge",2018,3,2,-1,0,"Convert 3-family to 2-family",42.372,-71.1039,"113-76",null,"c/0149/img_4584_149052.jpg",[]],["12 Dinsmore Ct","West Cambridge",2018,2,1,-1,0,"",42.375,-71.1291,"220-138","a%5C00%5C02%5C97%5C43.jpg","c/0135/img_2164_135698.jpg",["a%5C00%5C02%5C97%5C43.jpg","a%5C00%5C06%5C31%5C14.jpg","a%5C0131%5Cimg_1654_131628.jpg","a%5C00%5C00%5C01%5C67.jpg"]],["55 Reed St","North Cambridge",2018,3,2,-1,1,"",42.395,-71.132,"192-28",null,"c/0137/img_0117_137376.jpg",[]],["55-57 Park Ave","Strawberry Hill",2018,2,1,-1,0,"",42.3774,-71.1493,"253-141","a%5C00%5C05%5C45%5C39.jpg","c/0149/img_4577_149040.jpg",["a%5C00%5C05%5C45%5C39.jpg","a%5C00%5C06%5C45%5C63.jpg","a%5C0136%5Cimg_3643_136571.jpg","a%5C0131%5Cimg_2839_131655.jpg","a%5C00%5C00%5C16%5C19.jpg"]],["17 Fayette St","Mid-Cambridge",2018,8,7,-1,0,"",42.3719,-71.104,"113-67","a%5C00%5C00%5C98%5C09.jpg","c/00/04/49/58.jpg",["a%5C00%5C00%5C98%5C09.jpg"]],["18-20 Myrtle Ave","Mid-Cambridge",2017,2,1,-1,0,"",42.3772,-71.1069,"141-54","a%5C00%5C00%5C54%5C28.jpg","c/0146/img_0004_146167.jpg",["a%5C00%5C00%5C54%5C28.jpg","a%5C00%5C05%5C03%5C11.jpg","a%5C00%5C06%5C36%5C78.jpg"]],["14 Hardwick Street","Wellington-Harrington",2017,3,2,-1,0,"",42.3698,-71.0904,"39-62","a%5C00%5C03%5C16%5C38.jpg",null,["a%5C00%5C03%5C16%5C38.jpg","a%5C00%5C06%5C23%5C98.jpg","a%5C00%5C06%5C33%5C25.jpg","a%5C00%5C00%5C25%5C85.jpg"]],["992 Memorial Drive","West Cambridge",2017,2,1,-1,0,"",42.3735,-71.1262,"166-71",null,null,[]],["308 Hurley St","East Cambridge",2017,2,1,-1,0,"Convert 2 family to single.",42.3687,-71.0843,"26-108",null,"c/0132/26-180%20bld308%20jpg_132869.jpg",[]],["39 Hammond St","Baldwin",2017,9,5,-4,1,"",42.3809,-71.1149,"149-93",null,"c/0136/img_0028_136856.jpg",[]],["346 Washington St","The Port",2017,3,2,-1,0,"",42.3655,-71.0992,"91-14","a%5C00%5C03%5C71%5C14.jpg","c/00/06/33/60.jpg",["a%5C00%5C03%5C71%5C14.jpg","a%5C00%5C04%5C99%5C23.jpg","a%5C00%5C06%5C09%5C51.jpg","a%5C00%5C00%5C35%5C62.jpg"]],["11 Walden St","North Cambridge",2016,5,4,-1,0,"",42.3909,-71.1238,"199-86",null,"c/0139/img_0010_139926.jpg",[]],["211 Green St","Cambridgeport",2016,6,2,-4,0,"",42.3641,-71.1027,"93-104",null,"c/0139/img-7767_139777.jpg",[]],["14 Holly Ave","Neighborhood Nine",2016,2,1,-1,0,"",42.3827,-71.1298,"227-11","a%5C00%5C05%5C55%5C25.jpg","c/0136/img_3690_136675.jpg",["a%5C00%5C05%5C55%5C25.jpg","a%5C00%5C05%5C33%5C32.jpg","a%5C00%5C05%5C93%5C87.jpg","a%5C00%5C00%5C96%5C53.jpg"]],["85 Alpine St","Neighborhood Nine",2016,2,1,-1,0,"",42.3859,-71.137,"261-141","a%5C00%5C03%5C39%5C35.jpg","c/0131/img_1656_131630.jpg",["a%5C00%5C03%5C39%5C35.jpg","a%5C00%5C05%5C98%5C37.jpg","a%5C00%5C06%5C49%5C62.jpg","a%5C00%5C00%5C20%5C08.jpg"]],["21 Bay St","Riverside",2016,4,3,-1,0,"",42.368,-71.1111,"121-30",null,"c/00/06/51/85.jpg",[]],["2 Rice Circle","North Cambridge",2016,3,2,-1,0,"",42.3947,-71.1298,"192-173","a%5C00%5C00%5C77%5C35.jpg",null,["a%5C00%5C00%5C77%5C35.jpg","a%5C00%5C02%5C95%5C25.jpg","a%5C00%5C05%5C95%5C74.jpg","a%5C00%5C00%5C67%5C49.jpg"]],["134-136 Pleasant St","Cambridgeport",2016,4,1,-3,1,"",42.3605,-71.1122,"101-27",null,null,[]],["1 Gold Star Road Ct","North Cambridge",2016,2,1,-1,0,"",42.3995,-71.1305,"184-187","a%5C00%5C04%5C00%5C80.jpg","c/0132/img_2931_132273.jpg",["a%5C00%5C04%5C00%5C80.jpg","a%5C00%5C05%5C60%5C83.jpg","a%5C00%5C06%5C02%5C96.jpg","a%5C0132%5Cimg_2930_132272.jpg","a%5C00%5C00%5C62%5C69.jpg"]],["318 Harvard St","Mid-Cambridge",2016,2,1,-1,0,"",42.3701,-71.1073,"116-29","a%5C00%5C00%5C45%5C58.jpg","c/00/06/60/69.jpg",["a%5C00%5C00%5C45%5C58.jpg","a%5C00%5C03%5C43%5C13.jpg","a%5C00%5C05%5C04%5C48.jpg","a%5C00%5C05%5C61%5C51.jpg","a%5C00%5C05%5C98%5C64.jpg","a%5C00%5C06%5C60%5C68.jpg"]],["45 Coolidge Hill Rd","West Cambridge",2016,2,1,-1,0,"",42.3738,-71.139,"242A-119","a%5C00%5C01%5C80%5C25.jpg","c/0141/img_0015_141278.jpg",["a%5C00%5C01%5C80%5C25.jpg","a%5C00%5C02%5C33%5C26.jpg","a%5C00%5C02%5C48%5C63.jpg","a%5C00%5C05%5C04%5C85.jpg","a%5C00%5C05%5C70%5C48.jpg","a%5C00%5C05%5C94%5C60.jpg"]],["60 Orchard St","North Cambridge",2016,2,1,-1,0,"",42.392,-71.1214,"181-69","a%5C00%5C05%5C30%5C91.jpg","c/0160/img_0004[1]_160775.jpg",["a%5C00%5C05%5C30%5C91.jpg","a%5C00%5C05%5C43%5C31.jpg","a%5C00%5C06%5C01%5C97.jpg","a%5C00%5C06%5C31%5C78.jpg","a%5C00%5C00%5C92%5C10.jpg"]],["482 Huron Ave","West Cambridge",2016,2,1,-1,0,"",42.3802,-71.1431,"247-120","a%5C00%5C03%5C73%5C78.jpg","c/0131/img_1707_131868.jpg",["a%5C00%5C03%5C73%5C78.jpg","a%5C00%5C05%5C98%5C13.jpg","a%5C00%5C06%5C45%5C97.jpg","a%5C00%5C00%5C12%5C52.jpg"]],["38 Ellery St","Mid-Cambridge",2016,2,1,-1,0,"",42.3717,-71.1104,"135-100","a%5C00%5C00%5C52%5C01.jpg","c/00/05/97/86.jpg",["a%5C00%5C00%5C52%5C01.jpg","a%5C00%5C02%5C95%5C50.jpg","a%5C00%5C05%5C69%5C15.jpg"]],["236 Walden St","Neighborhood Nine",2015,2,1,-1,0,"",42.3864,-71.1302,"205-5","a%5C00%5C03%5C91%5C39.jpg","c/0156/img_0007[1]_156564.jpg",["a%5C00%5C03%5C91%5C39.jpg","a%5C00%5C05%5C51%5C53.jpg","a%5C00%5C05%5C95%5C25.jpg","a%5C00%5C06%5C41%5C25.jpg","a%5C0138%5Cimg_0011_138481.jpg","a%5C00%5C00%5C89%5C65.jpg"]],["60 Ellery St","Mid-Cambridge",2015,9,4,-5,0,"",42.3724,-71.1098,"135-119","a%5C00%5C04%5C48%5C60.jpg","c/00/05/92/78.jpg",["a%5C00%5C04%5C48%5C60.jpg","a%5C00%5C00%5C97%5C26.jpg"]],["65 Ellery St","Mid-Cambridge",2015,3,1,-1,0,"",42.3725,-71.11,"135-30","a%5C00%5C00%5C52%5C43.jpg","c/0151/img_2583_151053.jpg",["a%5C00%5C00%5C52%5C43.jpg","a%5C00%5C05%5C57%5C67.jpg","a%5C00%5C05%5C23%5C57.jpg","a%5C00%5C06%5C10%5C39.jpg","a%5C0151%5Cimg_2582_151052.jpg"]],["65 Pleasant St","Cambridgeport",2015,2,1,-1,0,"",42.363,-71.1096,"125-78","a%5C00%5C00%5C49%5C65.jpg","c/00/05/96/37.jpg",["a%5C00%5C00%5C49%5C65.jpg","a%5C00%5C03%5C20%5C60.jpg","a%5C00%5C05%5C52%5C74.jpg","a%5C00%5C05%5C66%5C92.jpg"]],["66 Clay St","North Cambridge",2015,2,1,-1,0,"",42.3954,-71.1343,"193-36","a%5C00%5C00%5C78%5C36.jpg","c/00/05/93/53.jpg",["a%5C00%5C00%5C78%5C36.jpg","a%5C00%5C02%5C92%5C61.jpg","a%5C00%5C05%5C49%5C94.jpg","a%5C00%5C05%5C29%5C36.jpg","a%5C00%5C00%5C68%5C57.jpg"]],["150 Larch Rd","West Cambridge",2015,2,1,-1,0,"",42.3799,-71.1435,"249-53","a%5C00%5C04%5C85%5C78.jpg","c/00/05/95/07.jpg",["a%5C00%5C04%5C85%5C78.jpg","a%5C00%5C04%5C62%5C94.jpg","a%5C00%5C05%5C59%5C77.jpg","a%5C00%5C00%5C14%5C10.jpg"]],["411 Broadway","Mid-Cambridge",2015,3,2,-1,0,"",42.3725,-71.1088,"139-34","a%5C00%5C00%5C52%5C88.jpg","c/0132/img_0004_132188.jpg",["a%5C00%5C00%5C52%5C88.jpg","a%5C00%5C05%5C68%5C90.jpg","a%5C00%5C06%5C39%5C55.jpg","a%5C00%5C05%5C44%5C54.jpg","a%5C00%5C05%5C97%5C91.jpg"]],["35 Huron Ave","Neighborhood Nine",2015,2,1,-1,0,"",42.385,-71.1275,"206-83","a%5C00%5C05%5C56%5C81.jpg","c/0139/img-7469_139675.jpg",["a%5C00%5C05%5C56%5C81.jpg","a%5C00%5C05%5C27%5C29.jpg","a%5C00%5C06%5C36%5C22.jpg","a%5C00%5C00%5C95%5C07.jpg"]],["12 Malcolm Rd","West Cambridge",2015,2,1,-1,0,"",42.3817,-71.1393,"234-111","a%5C00%5C03%5C74%5C20.jpg","c/0160/img_0006[1]_160018.jpg",["a%5C00%5C03%5C74%5C20.jpg","a%5C00%5C05%5C59%5C83.jpg","a%5C00%5C06%5C05%5C91.jpg","a%5C00%5C00%5C08%5C68.jpg"]],["117 Appleton St","West Cambridge",2015,2,1,-1,0,"",42.3806,-71.1343,"232-67","a%5C00%5C04%5C62%5C37.jpg","c/0149/img_4691_149534.jpg",["a%5C00%5C04%5C62%5C37.jpg","a%5C00%5C05%5C59%5C76.jpg","a%5C00%5C05%5C60%5C46.jpg","a%5C00%5C00%5C07%5C43.jpg"]],["9 Dinsmore Ct","West Cambridge",2015,2,1,-1,0,"",42.3751,-71.1289,"220-34","a%5C00%5C03%5C48%5C04.jpg","c/00/05/55/04.jpg",["a%5C00%5C03%5C48%5C04.jpg","a%5C00%5C04%5C96%5C21.jpg","a%5C00%5C00%5C02%5C05.jpg"]],["11 Kinnaird St","Riverside",2015,2,1,-1,0,"",42.3644,-71.1091,"125-27",null,null,[]],["35 Willard St","West Cambridge",2015,2,1,-1,0,"",42.3749,-71.1285,"220-141","a%5C00%5C04%5C96%5C15.jpg","c/00/06/50/84.jpg",["a%5C00%5C04%5C96%5C15.jpg","a%5C00%5C05%5C55%5C02.jpg","a%5C00%5C05%5C93%5C92.jpg","a%5C00%5C06%5C20%5C68.jpg","a%5C00%5C06%5C32%5C10.jpg","a%5C00%5C01%5C07%5C63.jpg"]],["341 Harvard St","Mid-Cambridge",2015,2,1,-1,0,"",42.371,-71.1097,"135-67","a%5C00%5C00%5C52%5C58.jpg","c/00/05/54/53.jpg",["a%5C00%5C00%5C52%5C58.jpg"]],["93 Kirkland St","Baldwin",2014,6,4,-2,0,"",42.3781,-71.1076,"146A-74",null,"c/00/05/46/96.jpg",[]],["102-104 Otis St","East Cambridge",2014,6,4,-2,0,"",42.3706,-71.0828,"25-150",null,"c/00/06/34/88.jpg",[]],["22-24 Clifton St","North Cambridge",2014,3,2,-1,0,"",42.369,-71.1053,"118-11",null,null,[]],["22 Tremont St","The Port",2014,2,1,-1,0,"",42.3701,-71.0989,"87-75","a%5C00%5C05%5C00%5C92.jpg","c/0153/img_0005_153801.jpg",["a%5C00%5C05%5C00%5C92.jpg","a%5C00%5C04%5C69%5C19.jpg","a%5C00%5C00%5C33%5C98.jpg"]],["13 Ash St","West Cambridge",2014,2,1,-1,0,"",42.375,-71.1249,"167-76","a%5C00%5C04%5C70%5C58.jpg","c/00/05/93/91.jpg",["a%5C00%5C04%5C70%5C58.jpg","a%5C00%5C05%5C18%5C02.jpg","a%5C00%5C05%5C87%5C04.jpg","a%5C00%5C00%5C59%5C48.jpg"]],["74 Reservoir St","West Cambridge",2014,2,1,-1,0,"Convert 2-family to single",42.3818,-71.1356,"232-15","a%5C00%5C03%5C74%5C37.jpg","c/00/05/90/46.jpg",["a%5C00%5C03%5C74%5C37.jpg","a%5C00%5C05%5C21%5C06.jpg","a%5C00%5C00%5C07%5C08.jpg"]],["19 Myrtle Ave","Mid-Cambridge",2014,2,1,-1,0,"",42.3771,-71.107,"141-101","a%5C00%5C00%5C53%5C99.jpg","c/0147/img_0011_147702.jpg",["a%5C00%5C00%5C53%5C99.jpg","a%5C00%5C03%5C45%5C47.jpg","a%5C00%5C05%5C23%5C53.jpg"]],["50 Cedar St","North Cambridge",2014,2,1,-1,0,"Convert 2-family to single",42.3947,-71.1307,"192-56",null,"c/0141/img_0043_141413.jpg",[]],["4 Frost St","Baldwin",2014,6,2,-4,0,"",42.3864,-71.1173,"153-36","a%5C00%5C01%5C90%5C37.jpg","c/00/06/06/96.jpg",["a%5C00%5C01%5C90%5C37.jpg","a%5C00%5C04%5C09%5C97.jpg","a%5C00%5C05%5C21%5C96.jpg","a%5C00%5C05%5C46%5C94.jpg"]],["23 Florence St","Cambridgeport",2014,2,1,-1,0,"",42.3587,-71.1138,"100-23","a%5C00%5C03%5C22%5C47.jpg","c/00/05/85/64.jpg",["a%5C00%5C03%5C22%5C47.jpg","a%5C00%5C04%5C89%5C90.jpg","a%5C00%5C05%5C18%5C40.jpg","a%5C00%5C06%5C34%5C71.jpg","a%5C00%5C00%5C39%5C52.jpg"]],["13 Greenough Ave","Mid-Cambridge",2013,2,1,-1,0,"",42.3735,-71.106,"112-39","a%5C00%5C00%5C44%5C28.jpg","c/00/06/12/58.jpg",["a%5C00%5C00%5C44%5C28.jpg","a%5C00%5C04%5C76%5C51.jpg","a%5C00%5C05%5C17%5C61.jpg"]],["15 Kinnaird St","Riverside",2013,2,1,-1,0,"",42.3646,-71.1091,"125-26","a%5C00%5C00%5C49%5C35.jpg","c/0145/img_4463_145367.jpg",["a%5C00%5C00%5C49%5C35.jpg","a%5C00%5C04%5C77%5C30.jpg","a%5C00%5C03%5C65%5C34.jpg"]],["164 Pemberton St","North Cambridge",2013,2,1,-1,0,"",42.3909,-71.1301,"195-104","a%5C00%5C02%5C78%5C66.jpg","c/00/05/99/43.jpg",["a%5C00%5C02%5C78%5C66.jpg","a%5C00%5C04%5C85%5C37.jpg","a%5C00%5C00%5C89%5C37.jpg"]],["17 Prentiss St","Baldwin",2013,2,1,-1,0,"",42.3845,-71.1181,"154-125","a%5C00%5C03%5C44%5C62.jpg","c/00/05/51/34.jpg",["a%5C00%5C03%5C44%5C62.jpg","a%5C00%5C04%5C80%5C71.jpg","a%5C00%5C04%5C57%5C74.jpg","a%5C00%5C00%5C57%5C91.jpg"]],["176 Appleton St","West Cambridge",2013,2,1,-1,0,"",42.3823,-71.1335,"230-62","a%5C00%5C03%5C39%5C47.jpg","c/00/06/34/10.jpg",["a%5C00%5C03%5C39%5C47.jpg","a%5C00%5C04%5C83%5C20.jpg","a%5C00%5C05%5C47%5C61.jpg","a%5C00%5C05%5C93%5C64.jpg","a%5C00%5C05%5C94%5C82.jpg","a%5C00%5C00%5C06%5C48.jpg"]],["19 Hutchinson St","West Cambridge",2013,2,1,-1,0,"",42.3825,-71.1344,"230-110","a%5C00%5C03%5C37%5C76.jpg","c/0139/img_2932_139531.jpg",["a%5C00%5C03%5C37%5C76.jpg","a%5C00%5C04%5C82%5C27.jpg","a%5C00%5C05%5C17%5C48.jpg","a%5C00%5C06%5C11%5C60.jpg","a%5C00%5C00%5C05%5C95.jpg"]],["21 Gurney St","West Cambridge",2013,2,1,-1,0,"",42.3804,-71.1385,"236-90","a%5C00%5C04%5C91%5C62.jpg","c/0132/img_1748_132183.jpg",["a%5C00%5C04%5C91%5C62.jpg","a%5C00%5C04%5C62%5C89.jpg","a%5C00%5C00%5C10%5C50.jpg"]],["22 Lowell St","West Cambridge",2013,3,2,-1,0,"",42.3755,-71.1331,"221-13",null,"c/00/05/28/13.jpg",[]],["25 High St","Strawberry Hill",2013,2,1,-1,0,"",42.3783,-71.1499,"253-128","a%5C00%5C04%5C81%5C25.jpg","c/0138/img_0015_138732.jpg",["a%5C00%5C04%5C81%5C25.jpg","a%5C00%5C05%5C24%5C65.jpg","a%5C0134%5Cimg_2044_134443.jpg","a%5C00%5C00%5C16%5C07.jpg"]],["72 Lexington Ave","West Cambridge",2012,2,1,-1,1,"Construct single family on site of demolished 2-family",42.378,-71.1405,"247-107","a%5C00%5C02%5C91%5C55.jpg","c/0156/img_0005[1]_156322.jpg",["a%5C00%5C02%5C91%5C55.jpg","a%5C00%5C03%5C19%5C40.jpg","a%5C00%5C02%5C77%5C55.jpg","a%5C00%5C02%5C78%5C37.jpg","a%5C00%5C03%5C74%5C66.jpg","a%5C00%5C04%5C26%5C30.jpg","a%5C00%5C04%5C74%5C62.jpg","a%5C00%5C00%5C12%5C42.jpg"]],["25 Healey St","West Cambridge",2012,2,1,-1,0,"Convert 2-family to single",42.3803,-71.1292,"225-17","a%5C00%5C04%5C26%5C87.jpg","c/0148/img_0006_148610.jpg",["a%5C00%5C04%5C26%5C87.jpg","a%5C00%5C04%5C75%5C11.jpg","a%5C00%5C04%5C37%5C22.jpg","a%5C00%5C00%5C03%5C92.jpg"]],["120-122 Oxford St","Baldwin",2011,5,3,-2,1,"",42.3841,-71.1157,"151-54",null,"c/00/04/49/72.jpg",[]],["76 Fayerweather St","West Cambridge",2011,2,1,-1,0,"",42.381,-71.1372,"237-34","a%5C00%5C03%5C80%5C96.jpg","c/0135/img_0004_135190.jpg",["a%5C00%5C03%5C80%5C96.jpg","a%5C00%5C05%5C40%5C15.jpg","a%5C00%5C01%5C08%5C97.jpg"]],["15 Homer Ave","West Cambridge",2011,3,1,-2,0,"",42.3756,-71.148,"252-151","a%5C00%5C03%5C82%5C07.jpg","c/0137/img_0012_137989.jpg",["a%5C00%5C03%5C82%5C07.jpg","a%5C00%5C03%5C24%5C80.jpg","a%5C00%5C00%5C15%5C81.jpg"]],["8 Howard St","Riverside",2011,2,1,-1,0,"",42.3638,-71.1105,"125-136","a%5C00%5C00%5C49%5C26.jpg","c/0142/img_3563_142772.jpg",["a%5C00%5C00%5C49%5C26.jpg","a%5C00%5C03%5C36%5C66.jpg","a%5C00%5C06%5C49%5C22.jpg","a%5C0137%5Cimg_2508_137720.jpg"]],["246 Concord Ave","West Cambridge",2011,3,2,-1,0,"",42.383,-71.1325,"230-45","a%5C00%5C04%5C58%5C19.jpg",null,["a%5C00%5C04%5C58%5C19.jpg","a%5C00%5C05%5C14%5C08.jpg","a%5C0141%5Cimg_0027_141926.jpg","a%5C0163%5C100_0002_163192.jpg","a%5C0154%5C100_0003_154893.jpg","a%5C0154%5C100_0004_154892.jpg","a%5C00%5C00%5C06%5C37.jpg"]],["49 Trowbridge St","Mid-Cambridge",2011,2,1,-1,0,"",42.3727,-71.1113,"135-114",null,"c/0145/img_0003_145792.jpg",[]],["111-113 Grozier Rd","West Cambridge",2010,2,1,-1,0,"",42.381,-71.1423,"248-68","a%5C00%5C03%5C79%5C13.jpg","c/0159/img_0007[1]_159961.jpg",["a%5C00%5C03%5C79%5C13.jpg","a%5C00%5C03%5C50%5C05.jpg","a%5C00%5C05%5C59%5C08.jpg","a%5C00%5C00%5C13%5C61.jpg"]],["442 Huron Ave","West Cambridge",2010,2,1,-1,0,"",42.3805,-71.1414,"247-71","a%5C00%5C02%5C74%5C57.jpg","c/0158/img_5732[1]_158822.jpg",["a%5C00%5C02%5C74%5C57.jpg","a%5C00%5C03%5C22%5C01.jpg","a%5C00%5C00%5C13%5C21.jpg"]],["45-47 Fenno St","Neighborhood Nine",2010,2,1,-1,0,"",42.3855,-71.1296,"205-28","a%5C00%5C03%5C19%5C61.jpg","c/00/03/74/56.jpg",["a%5C00%5C03%5C19%5C61.jpg","a%5C00%5C03%5C23%5C36.jpg","a%5C0135%5Cimg_1043_135594.jpg","a%5C00%5C00%5C72%5C97.jpg"]],["160-166 Hancock St","Mid-Cambridge",2010,5,4,-1,0,"",42.3705,-71.1064,"115-19",null,"c/0132/115-19_132779.jpg",[]],["81 Pemberton St","North Cambridge",2010,2,1,-1,0,"",42.3905,-71.1266,"199-7","a%5C00%5C03%5C74%5C50.jpg","c/0137/img_3755_137421.jpg",["a%5C00%5C03%5C74%5C50.jpg","a%5C00%5C03%5C21%5C24.jpg","a%5C00%5C03%5C25%5C12.jpg","a%5C00%5C00%5C92%5C70.jpg"]],["48 Concord Ave","West Cambridge",2010,3,2,-1,0,"",42.3804,-71.1281,"225-7",null,null,[]],["41 Magnolia St","Mid-Cambridge",2010,3,2,-1,0,"",42.3766,-71.1062,"140-126","a%5C00%5C00%5C53%5C49.jpg",null,["a%5C00%5C00%5C53%5C49.jpg","a%5C00%5C03%5C76%5C97.jpg"]],["289 Brookline St","Cambridgeport",2010,2,1,-1,0,"",42.357,-71.1086,"97-86","a%5C00%5C03%5C20%5C47.jpg","c/0148/img_4314_148154.jpg",["a%5C00%5C03%5C20%5C47.jpg","a%5C00%5C05%5C16%5C66.jpg","a%5C00%5C00%5C38%5C47.jpg"]],["136 Fayerweather St","West Cambridge",2010,2,1,-1,0,"",42.3838,-71.1363,"263-117","a%5C00%5C03%5C78%5C52.jpg","c/0132/img_1758_132173.jpg",["a%5C00%5C03%5C78%5C52.jpg","a%5C00%5C03%5C47%5C24.jpg","a%5C00%5C04%5C01%5C25.jpg","a%5C00%5C00%5C21%5C56.jpg"]],["14-16 Kelly Rd","Cambridgeport",2009,4,2,-2,0,"",42.3621,-71.1089,"104-116","a%5C00%5C02%5C91%5C41.jpg","c/00/06/63/77.jpg",["a%5C00%5C02%5C91%5C41.jpg","a%5C00%5C02%5C92%5C94.jpg","a%5C00%5C02%5C78%5C85.jpg","a%5C00%5C04%5C02%5C34.jpg","a%5C00%5C00%5C87%5C61.jpg"]],["38 Porter Rd","North Cambridge",2009,2,1,-1,0,"",42.389,-71.1214,"178-126","a%5C00%5C02%5C29%5C60.jpg","c/0138/img-6601_138770.jpg",["a%5C00%5C02%5C29%5C60.jpg","a%5C00%5C04%5C34%5C54.jpg"]],["33 Park Ave","Strawberry Hill",2009,2,1,-1,0,"",42.378,-71.149,"253-115","a%5C00%5C02%5C93%5C68.jpg","c/0159/img_0013[1]_159968.jpg",["a%5C00%5C02%5C93%5C68.jpg","a%5C00%5C02%5C97%5C21.jpg","a%5C00%5C00%5C16%5C02.jpg"]],["132-134 Larch Rd","West Cambridge",2008,2,1,-1,0,"",42.3793,-71.1433,"249-57","a%5C00%5C02%5C91%5C53.jpg","c/0132/img_1752_132178.jpg",["a%5C00%5C02%5C91%5C53.jpg","a%5C00%5C02%5C93%5C94.jpg","a%5C00%5C04%5C85%5C56.jpg","a%5C00%5C06%5C43%5C51.jpg","a%5C00%5C00%5C14%5C14.jpg"]],["18-20 Tenney St","North Cambridge",2008,2,1,-1,0,"",42.3928,-71.1209,"180-26","a%5C00%5C05%5C34%5C03.jpg","c/0155/img_5359[1]_155057.jpg",["a%5C00%5C05%5C34%5C03.jpg","a%5C00%5C06%5C16%5C97.jpg","a%5C00%5C00%5C91%5C41.jpg"]],["21-23 Gray St","Neighborhood Nine",2008,3,2,-1,0,"",42.3832,-71.1224,"212-4",null,"c/0161/100_0010_161062.jpg",[]],["119 Fayerweather St","West Cambridge",2008,2,1,-1,0,"",42.3835,-71.1368,"263-107","a%5C00%5C04%5C57%5C79.jpg","c/0150/img_2277_150281.jpg",["a%5C00%5C04%5C57%5C79.jpg","a%5C0150%5Cimg_2276_150280.jpg","a%5C00%5C00%5C21%5C50.jpg"]],["45-47 Magazine St","Cambridgeport",2008,4,3,-1,0,"",42.3628,-71.1072,"104-155",null,"c/00/03/06/94.jpg",[]],["168-B Lexington Ave","West Cambridge",2008,6,2,-4,0,"",42.3798,-71.1411,"247-165","a%5C00%5C03%5C71%5C71.jpg","c/0149/img_1786_149028.jpg",["a%5C00%5C03%5C71%5C71.jpg","a%5C0141%5Cimg_0008_141463.jpg","a%5C0137%5Cimg_0061_137184.jpg","a%5C0145%5Cimg_0007_145273.jpg","a%5C0138%5Cimg_0017_138713.jpg","a%5C00%5C01%5C07%5C76.jpg"]],["60 Middlesex St","North Cambridge",2008,2,1,-1,0,"",42.3917,-71.1305,"195-41","a%5C00%5C02%5C81%5C68.jpg","c/00/06/17/06.jpg",["a%5C00%5C02%5C81%5C68.jpg","a%5C00%5C02%5C91%5C34.jpg","a%5C00%5C00%5C69%5C58.jpg"]],["102-104 Lexington Ave","West Cambridge",2007,2,1,-1,0,"Convert 2-family to single",42.3786,-71.1407,"247-102","a%5C00%5C02%5C62%5C45.jpg","c/00/06/27/60.jpg",["a%5C00%5C02%5C62%5C45.jpg","a%5C00%5C02%5C93%5C52.jpg","a%5C00%5C02%5C78%5C36.jpg","a%5C00%5C00%5C12%5C38.jpg"]],["30 Holworthy Place","Strawberry Hill",2007,3,2,-1,0,"Convert 3-unit to 2-unit",42.3767,-71.1493,"253-132",null,null,[]],["159 Upland Road","Neighborhood Nine",2007,3,2,-1,0,"",42.3869,-71.1257,"201.5-19",null,null,[]],["31 Copley St","Neighborhood Nine",2007,3,2,-1,0,"Convert 3-unit to 2-unit",42.385,-71.1347,"262-103",null,"c/0155/img_0009[1]_155692.jpg",[]],["36 Royal Ave","West Cambridge",2007,3,1,-2,0,"Convert 3-family to single",42.3824,-71.1322,"230-82","a%5C00%5C03%5C00%5C47.jpg","c/0159/img_5799[1]_159321.jpg",["a%5C00%5C03%5C00%5C47.jpg","a%5C00%5C04%5C32%5C60.jpg","a%5C00%5C00%5C06%5C60.jpg"]],["57 Otis St","East Cambridge",2007,4,3,-1,0,"",42.3704,-71.0802,"24-110",null,"c/0162/100_0046_162679.jpg",[]],["170 Lexington Ave","West Cambridge",2007,3,2,-1,0,"Convert 3-family to 2-family",42.3799,-71.1412,"247-113","a%5C00%5C02%5C62%5C47.jpg","c/0153/img_0011_153336.jpg",["a%5C00%5C02%5C62%5C47.jpg","a%5C00%5C06%5C17%5C63.jpg","a%5C00%5C06%5C37%5C64.jpg","a%5C00%5C00%5C12%5C49.jpg"]],["169 Pearl St","Cambridgeport",2007,5,4,-1,0,"convert 5 units to 4",42.3607,-71.1071,"103-26",null,"c/0142/img_0018_142096.jpg",[]],["73 Grozier Rd","West Cambridge",2007,2,1,-1,0,"Convert 2-family to single",42.3798,-71.1419,"247-142","a%5C00%5C02%5C91%5C96.jpg","c/00/04/32/03.jpg",["a%5C00%5C02%5C91%5C96.jpg","a%5C00%5C02%5C62%5C97.jpg","a%5C00%5C02%5C63%5C31.jpg","a%5C00%5C03%5C19%5C25.jpg","a%5C00%5C02%5C79%5C83.jpg","a%5C00%5C02%5C79%5C84.jpg","a%5C00%5C00%5C12%5C63.jpg"]],["17 Perry St","Cambridgeport",2007,6,3,-3,0,"",42.3622,-71.1068,"103-72",null,"c/0139/img-7141_139393.jpg",[]],["130 Fayerweather St","West Cambridge",2007,2,1,-1,0,"Convert 2-unit to single",42.3836,-71.1365,"263-72","a%5C00%5C00%5C22%5C14.jpg","c/00/06/14/17.jpg",["a%5C00%5C00%5C22%5C14.jpg"]],["100-102 Hammond St","Baldwin",2006,2,1,-1,0,"Convert 2-family to single",42.3816,-71.1127,"149-87","a%5C00%5C00%5C56%5C35.jpg","c/0161/img_0008[1]_161275.jpg",["a%5C00%5C00%5C56%5C35.jpg","a%5C00%5C02%5C73%5C26.jpg","a%5C00%5C03%5C27%5C61.jpg","a%5C00%5C06%5C30%5C39.jpg","a%5C0136%5Cimg_2235_136144.jpg","a%5C0159%5Cimg_0009%5B1%5D_159344.jpg"]],["4 Austin Park","Mid-Cambridge",2006,2,1,-1,0,"",42.3673,-71.1042,"107-90","a%5C00%5C02%5C73%5C95.jpg",null,["a%5C00%5C02%5C73%5C95.jpg","a%5C00%5C00%5C43%5C05.jpg"]],["34 Linnaean St","Neighborhood Nine",2006,8,4,-4,0,"Convert 8 unit building to 4 unit building",42.3836,-71.123,"212-14",null,"c/0133/img_0004_133583.jpg",[]],["3 Ellsworth Park","Mid-Cambridge",2006,3,1,-2,0,"Convert 3-family to single",42.3731,-71.1064,"112-8","a%5C00%5C00%5C44%5C46.jpg",null,["a%5C00%5C00%5C44%5C46.jpg","a%5C00%5C06%5C14%5C98.jpg"]],["50 Follen St Units 505 and 506","Neighborhood Nine",2006,2,1,-1,0,"Combine 2 units to 1",42.3781,-71.1212,"172-65",null,"c/00/06/38/42.jpg",[]],["54-56 Banks St","Riverside",2006,3,1,-2,0,"Convert 3-family to single",42.3693,-71.1145,"132-61","a%5C00%5C00%5C51%5C74.jpg","c/0159/img_0001[1]_159394.jpg",["a%5C00%5C00%5C51%5C74.jpg","a%5C00%5C03%5C09%5C93.jpg","a%5C00%5C02%5C73%5C34.jpg","a%5C00%5C05%5C35%5C44.jpg","a%5C0140%5Cimg_3160_140378.jpg","a%5C0147%5Cimg_1359_147530.jpg"]],["61 Rice St","North Cambridge",2006,2,1,-1,0,"",42.3944,-71.1298,"192-87","a%5C00%5C00%5C77%5C62.jpg","c/00/06/28/19.jpg",["a%5C00%5C00%5C77%5C62.jpg","a%5C00%5C02%5C77%5C37.jpg"]],["8 Museum Way","East Cambridge",2006,2,1,-1,0,"Combine 2 units to 1",42.3701,-71.0717,"1A-109",null,"c/00/03/28/76.jpg",[]],["12 Museum Way","East Cambridge",2006,2,1,-1,0,"Combine 2 units to 1",42.3704,-71.071,"1A-109",null,"c/0155/100_0021_155607.jpg",[]],["85 Upland Road","Neighborhood Nine",2006,6,2,-4,0,"Renovate 6 units to 2",42.3877,-71.1227,"201-71","a%5C00%5C02%5C68%5C21.jpg",null,["a%5C00%5C02%5C68%5C21.jpg","a%5C00%5C06%5C17%5C28.jpg","a%5C00%5C01%5C01%5C82.jpg"]],["112 Lexington Ave","West Cambridge",2006,2,1,-1,0,"Convert 2-family to single",42.3788,-71.1408,"247-100","a%5C00%5C04%5C62%5C12.jpg","c/0131/img_1675_131644.jpg",["a%5C00%5C04%5C62%5C12.jpg","a%5C00%5C00%5C12%5C36.jpg"]],["13 Ellsworth Ave","Mid-Cambridge",2005,2,1,-1,0,"",42.3732,-71.1072,"139-64","a%5C00%5C00%5C53%5C10.jpg","c/00/05/56/83.jpg",["a%5C00%5C00%5C53%5C10.jpg","a%5C00%5C02%5C30%5C24.jpg","a%5C00%5C02%5C30%5C25.jpg","a%5C00%5C04%5C38%5C74.jpg"]],["76-78 Hammond St","Baldwin",2005,2,1,-1,0,"",42.3811,-71.1136,"149-38",null,"c/0159/img_5790[1]_159126.jpg",[]],["19 Ash St","West Cambridge",2005,3,1,-2,0,"",42.3747,-71.1252,"167-40","a%5C00%5C02%5C74%5C30.jpg","c/0148/img_0001_148459.jpg",["a%5C00%5C02%5C74%5C30.jpg","a%5C00%5C04%5C85%5C50.jpg","a%5C00%5C00%5C59%5C26.jpg"]],["12 Holly Ave","Neighborhood Nine",2005,2,1,-1,0,"",42.3826,-71.1297,"227-12","a%5C00%5C02%5C50%5C61.jpg","c/0137/img_0001_137969.jpg",["a%5C00%5C02%5C50%5C61.jpg","a%5C00%5C03%5C66%5C58.jpg","a%5C00%5C04%5C01%5C11.jpg","a%5C00%5C00%5C96%5C57.jpg"]],["85 Thorndike St","East Cambridge",2005,3,1,-2,0,"",42.37,-71.082,"25-37","a%5C00%5C00%5C81%5C87.jpg","c/0154/100_0108_154419.jpg",["a%5C00%5C00%5C81%5C87.jpg","a%5C00%5C02%5C19%5C57.jpg","a%5C00%5C02%5C31%5C89.jpg","a%5C00%5C04%5C45%5C17.jpg","a%5C0154%5C100_0109_154418.jpg"]],["243 Charles St","East Cambridge",2005,4,3,-1,0,"",42.3683,-71.0853,"26-173","a%5C00%5C00%5C84%5C59.jpg","c/00/02/72/35.jpg",["a%5C00%5C00%5C84%5C59.jpg"]],["40-42 Mt. Pleasant St.","Neighborhood Nine",2005,6,4,-2,0,"",42.3878,-71.1249,"201-123",null,null,[]],["16 Bigelow St","Mid-Cambridge",2005,3,2,-1,0,"",42.3681,-71.1051,"118-38","a%5C00%5C01%5C74%5C48.jpg","c/0147/img_1336_147577.jpg",["a%5C00%5C01%5C74%5C48.jpg","a%5C00%5C02%5C72%5C80.jpg","a%5C00%5C03%5C20%5C12.jpg"]],["65 Fayette St","Mid-Cambridge",2005,3,2,-1,0,"",42.3734,-71.1027,"113-42","a%5C00%5C01%5C78%5C80.jpg","c/00/05/82/65.jpg",["a%5C00%5C01%5C78%5C80.jpg","a%5C00%5C02%5C72%5C87.jpg"]],["15 Hawthorne Park","West Cambridge",2005,2,1,-1,0,"",42.382,-71.1425,"248-73","a%5C00%5C02%5C50%5C18.jpg",null,["a%5C00%5C02%5C50%5C18.jpg","a%5C00%5C05%5C33%5C51.jpg","a%5C00%5C00%5C13%5C66.jpg"]],["258 Norfolk St","The Port",2005,2,1,-1,0,"",42.3704,-71.0977,"86-15","a%5C00%5C02%5C32%5C65.jpg","c/0153/img_5245_153668.jpg",["a%5C00%5C02%5C32%5C65.jpg","a%5C00%5C05%5C18%5C76.jpg","a%5C00%5C00%5C33%5C05.jpg"]],["272 Upland Road","Neighborhood Nine",2005,2,1,-1,0,"",42.3852,-71.128,"206-75","a%5C00%5C02%5C40%5C62.jpg",null,["a%5C00%5C02%5C40%5C62.jpg","a%5C00%5C03%5C86%5C30.jpg","a%5C00%5C04%5C74%5C17.jpg","a%5C00%5C00%5C73%5C66.jpg"]],["129 Lexington Ave","West Cambridge",2005,3,2,-1,0,"",42.3792,-71.1406,"235-82",null,"c/00/05/60/03.jpg",[]],["43-45 Magee St","Riverside",2005,2,1,-1,0,"",42.3662,-71.1117,"122-113","a%5C00%5C00%5C47%5C72.jpg","c/0148/img_1582_148709.jpg",["a%5C00%5C00%5C47%5C72.jpg","a%5C00%5C02%5C61%5C70.jpg","a%5C00%5C02%5C34%5C55.jpg","a%5C00%5C05%5C06%5C91.jpg"]],["11-15 Warren St","Wellington-Harrington",2004,6,3,-3,3,"",42.3727,-71.0884,"36-215","a%5C00%5C02%5C31%5C42.jpg","c/00/06/26/92.jpg",["a%5C00%5C02%5C31%5C42.jpg","a%5C00%5C02%5C31%5C43.jpg","a%5C00%5C02%5C32%5C88.jpg","a%5C00%5C00%5C24%5C25.jpg"]],["456 Franklin St","Riverside",2004,3,2,-1,0,"",42.3671,-71.1098,"124-79","a%5C00%5C00%5C49%5C00.jpg","c/0148/img_0006_148203.jpg",["a%5C00%5C00%5C49%5C00.jpg","a%5C00%5C02%5C22%5C05.jpg","a%5C00%5C05%5C31%5C70.jpg","a%5C00%5C05%5C47%5C02.jpg"]],["248-250 Concord Ave","West Cambridge",2004,3,2,-1,0,"",42.3831,-71.1326,"230-44","a%5C00%5C02%5C19%5C47.jpg","c/0149/img_1860_149722.jpg",["a%5C00%5C02%5C19%5C47.jpg","a%5C00%5C05%5C33%5C36.jpg","a%5C00%5C00%5C06%5C36.jpg"]],["156 Richdale Ave","Neighborhood Nine",2004,2,1,-1,0,"",42.389,-71.1268,"202-20",null,"c/00/06/08/42.jpg",[]],["15 St Paul St","Mid-Cambridge",2004,5,4,-1,0,"",42.3681,-71.1032,"107-56","a%5C00%5C00%5C95%5C83.jpg","c/00/04/50/46.jpg",["a%5C00%5C00%5C95%5C83.jpg"]],["40 Grozier Rd","West Cambridge",2004,2,1,-1,0,"",42.3786,-71.1418,"247-181","a%5C00%5C02%5C27%5C47.jpg","c/0145/img_0021_145489.jpg",["a%5C00%5C02%5C27%5C47.jpg","a%5C00%5C02%5C29%5C61.jpg","a%5C00%5C05%5C33%5C49.jpg","a%5C00%5C06%5C17%5C64.jpg","a%5C00%5C00%5C12%5C91.jpg"]],["68-70 Lakeview Ave.","West Cambridge",2003,2,1,-1,0,"",42.3784,-71.1393,"235-59","a%5C00%5C02%5C09%5C87.jpg","c/0159/img_0013[1]_159311.jpg",["a%5C00%5C02%5C09%5C87.jpg","a%5C00%5C02%5C79%5C44.jpg","a%5C00%5C04%5C34%5C38.jpg","a%5C00%5C00%5C09%5C79.jpg"]],["46 Highland Ave","Mid-Cambridge",2003,4,2,-2,0,"",42.3729,-71.1056,"112-96",null,"c/00/06/43/48.jpg",[]],["167 Brattle St","West Cambridge",2003,2,1,-1,0,"",42.3774,-71.1359,"238-45","a%5C00%5C01%5C79%5C98.jpg","c/0148/img_0003_148651.jpg",["a%5C00%5C01%5C79%5C98.jpg","a%5C00%5C06%5C17%5C57.jpg","a%5C0139%5Cimg_0020_139735.jpg"]],["23 Gurney St","West Cambridge",2003,2,1,-1,0,"",42.3805,-71.1385,"236-91","a%5C00%5C01%5C78%5C04.jpg","c/0137/img_0044_137168.jpg",["a%5C00%5C01%5C78%5C04.jpg","a%5C00%5C03%5C50%5C16.jpg","a%5C00%5C03%5C55%5C05.jpg","a%5C00%5C00%5C10%5C51.jpg"]],["200 Fayerweather St","Neighborhood Nine",2002,2,1,-1,0,"",42.3852,-71.1339,"262-89","a%5C00%5C03%5C34%5C82.jpg","c/0160/100_0049_160957.jpg",["a%5C00%5C03%5C34%5C82.jpg","a%5C00%5C06%5C30%5C11.jpg","a%5C0159%5Cimg_0003%5B1%5D_159955.jpg","a%5C0160%5C100_0050_160956.jpg","a%5C00%5C00%5C21%5C34.jpg"]],["52-56 Roberts Rd","Mid-Cambridge",2002,3,2,-1,0,"",42.3776,-71.108,"141-65",null,"c/0143/img_3650_143599.jpg",[]],["27 Maple St","Mid-Cambridge",2001,3,2,-1,0,"",42.3729,-71.1046,"112-63",null,null,[]],["16 Bellevue Ave","Neighborhood Nine",2001,2,1,-1,0,"",42.3859,-71.1261,"209-34","a%5C00%5C04%5C71%5C19.jpg","c/0145/img_0009_145564.jpg",["a%5C00%5C04%5C71%5C19.jpg","a%5C0138%5Cimg_2836_138791.jpg","a%5C00%5C00%5C73%5C77.jpg"]],["2 Ashburton Pl","The Port",2000,2,1,-1,0,"",42.3663,-71.1015,"90-81","a%5C00%5C04%5C69%5C64.jpg","c/0154/100_0004_154435.jpg",["a%5C00%5C04%5C69%5C64.jpg","a%5C0154%5C100_0003_154434.jpg","a%5C00%5C00%5C35%5C43.jpg"]],["96-98 Ellery St","Mid-Cambridge",2000,6,4,-2,0,"",42.374,-71.1087,"139-8",null,"c/0151/img_2584_151055.jpg",[]],["74 Fayerweather St","West Cambridge",2000,2,1,-1,0,"",42.3808,-71.1373,"237-64","a%5C00%5C03%5C73%5C02.jpg","c/00/06/53/93.jpg",["a%5C00%5C03%5C73%5C02.jpg","a%5C00%5C00%5C10%5C70.jpg"]],["51 Upland Road","Neighborhood Nine",2000,2,1,-1,0,"",42.3881,-71.1217,"201-65",null,null,[]],["35-37 Blake St","North Cambridge",1999,2,1,-1,0,"",42.3918,-71.1212,"181-19","a%5C00%5C05%5C15%5C33.jpg","c/0149/img_4727_149750.jpg",["a%5C00%5C05%5C15%5C33.jpg","a%5C00%5C00%5C91%5C79.jpg"]],["22 Lee St","Mid-Cambridge",1999,3,1,-2,0,"",42.3686,-71.1068,"117-35","a%5C00%5C00%5C45%5C88.jpg","c/00/05/06/09.jpg",["a%5C00%5C00%5C45%5C88.jpg","a%5C00%5C04%5C87%5C48.jpg"]],["56-58 Wendell St","Baldwin",1999,8,3,-5,3,"",42.3815,-71.1154,"149-81",null,"c/0142/img_0014_142995.jpg",[]],["26-28 Garden St","West Cambridge",1998,6,3,-3,0,"",42.3782,-71.1238,"216-8","a%5C00%5C05%5C31%5C67.jpg","c/00/06/52/50.jpg",["a%5C00%5C05%5C31%5C67.jpg","a%5C00%5C00%5C96%5C44.jpg"]],["24 Sacramento St","Baldwin",1998,2,1,-1,0,"",42.3825,-71.1173,"156-104","a%5C00%5C03%5C76%5C82.jpg","c/0149/img_4646_149499.jpg",["a%5C00%5C03%5C76%5C82.jpg","a%5C00%5C04%5C94%5C98.jpg","a%5C00%5C00%5C58%5C59.jpg"]],["12 Mellen St","Baldwin",1998,6,4,-2,0,"",42.3807,-71.1187,"157-4","a%5C00%5C00%5C97%5C63.jpg","c/00/04/30/96.jpg",["a%5C00%5C00%5C97%5C63.jpg"]],["5 Maple Ave","Mid-Cambridge",1998,3,2,-1,0,"",42.3717,-71.1055,"112-125","a%5C00%5C00%5C44%5C03.jpg","c/0147/img_0007_147698.jpg",["a%5C00%5C00%5C44%5C03.jpg","a%5C00%5C03%5C46%5C36.jpg","a%5C00%5C05%5C05%5C20.jpg"]],["346 Norfolk St","Wellington-Harrington",1998,2,1,-1,0,"",42.3726,-71.0962,"85-81","a%5C00%5C03%5C67%5C64.jpg","c/00/06/09/63.jpg",["a%5C00%5C03%5C67%5C64.jpg","a%5C00%5C05%5C00%5C95.jpg","a%5C00%5C05%5C53%5C67.jpg","a%5C00%5C00%5C32%5C80.jpg"]],["380 Broadway","Mid-Cambridge",1998,3,2,-1,0,"",42.371,-71.1057,"115-12","a%5C00%5C01%5C74%5C42.jpg","c/0148/img_1451_148058.jpg",["a%5C00%5C01%5C74%5C42.jpg","a%5C00%5C05%5C44%5C46.jpg"]],["80 Upland Rd","Neighborhood Nine",1998,8,4,-4,0,"",42.3876,-71.1223,"177-51",null,"c/0153/img_0005_153151.jpg",[]],["22 Garden St","West Cambridge",1998,3,2,-1,0,"",42.3779,-71.1235,"216-36","a%5C00%5C05%5C31%5C66.jpg","c/00/06/52/53.jpg",["a%5C00%5C05%5C31%5C66.jpg","a%5C00%5C00%5C96%5C43.jpg"]],["24 Garden St","West Cambridge",1998,6,3,-3,0,"",42.3781,-71.1237,"216-18","a%5C00%5C05%5C31%5C65.jpg","c/00/06/52/51.jpg",["a%5C00%5C05%5C31%5C65.jpg","a%5C00%5C00%5C96%5C42.jpg"]],["263-265 Mt Auburn St","West Cambridge",1997,2,1,-1,0,"",42.375,-71.1325,"221-79","a%5C00%5C04%5C60%5C19.jpg",null,["a%5C00%5C04%5C60%5C19.jpg","a%5C00%5C05%5C46%5C60.jpg","a%5C00%5C00%5C02%5C91.jpg"]],["26 Hingham St","Riverside",1997,6,4,-2,0,"",42.3651,-71.1148,"130-19",null,"c/00/06/62/73.jpg",[]],["14-#2 Mellen St","Baldwin",1997,3,2,-1,0,"",42.3807,-71.1184,"157-5","a%5C00%5C03%5C21%5C85.jpg","c/00/06/62/85.jpg",["a%5C00%5C03%5C21%5C85.jpg","a%5C00%5C00%5C97%5C64.jpg"]],["16 Russell St","North Cambridge",1997,2,1,-1,0,"",42.3924,-71.1228,"181-41","a%5C00%5C03%5C46%5C67.jpg","c/0138/img-6595_138774.jpg",["a%5C00%5C03%5C46%5C67.jpg","a%5C00%5C05%5C15%5C70.jpg","a%5C00%5C06%5C52%5C17.jpg","a%5C00%5C00%5C91%5C91.jpg"]],["350 Harvard St","Mid-Cambridge",1997,4,3,-1,0,"",42.3709,-71.1102,"116-116",null,"c/0144/img_0013_144769.jpg",[]],["24-A Prentiss St","Baldwin",1997,3,2,-1,0,"",42.3843,-71.1175,"154-85","a%5C00%5C04%5C57%5C73.jpg","c/00/06/38/69.jpg",["a%5C00%5C04%5C57%5C73.jpg","a%5C00%5C05%5C82%5C74.jpg","a%5C00%5C00%5C58%5C27.jpg"]],["17 Lancaster St","Neighborhood Nine",1997,2,1,-1,0,"",42.3857,-71.1208,"176-20","a%5C00%5C00%5C74%5C86.jpg","c/0150/img_4904_150953.jpg",["a%5C00%5C00%5C74%5C86.jpg","a%5C00%5C02%5C96%5C68.jpg","a%5C00%5C04%5C73%5C43.jpg","a%5C0132%5Cimg_1742_132147.jpg","a%5C0149%5Cimg_0009_149748.jpg"]],["180-182 Appleton St","West Cambridge",1997,3,2,-1,0,"",42.3824,-71.1335,"230-63",null,"c/00/06/32/31.jpg",[]],["54 Garfield St","Baldwin",1997,6,2,-4,0,"",42.3836,-71.1174,"155-7","a%5C00%5C01%5C78%5C08.jpg","c/0160/100_0029_160139.jpg",["a%5C00%5C01%5C78%5C08.jpg","a%5C00%5C04%5C10%5C01.jpg","a%5C00%5C05%5C47%5C46.jpg","a%5C00%5C06%5C01%5C07.jpg","a%5C0160%5C100_0028_160138.jpg"]],["128 Oxford St","Baldwin",1996,7,3,-4,0,"",42.3849,-71.1159,"151-13",null,"c/00/06/06/98.jpg",[]],["98 Kinnaird St","Riverside",1996,3,2,-1,0,"",42.3675,-71.1119,"121-66",null,"c/0162/img_0327[1]_162497.jpg",[]],["245-247 Washington St","The Port",1996,6,3,-3,0,"",42.365,-71.0966,"74-115",null,"c/0144/img_0595_144916.jpg",[]]];
+
+var rows = RAW.map(function (r, i) {
+  return { id: i, addr: r[0], nb: r[1], year: r[2], pre: r[3], post: r[4], net: r[5], lost: -r[5], hs: r[6],
+           desc: r[7], lat: r[8], lon: r[9], lot: r[10], b: r[11], a: r[12], ph: r[13],
+           pat: r[3] + ' → ' + r[4], mismatch: (r[3] + r[5]) !== r[4] };
+});
+
+function $(s, root) { return (root || document).querySelector(s); }
+function el(tag, attrs, kids) {
+  var n = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function (k) {
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'text') n.textContent = attrs[k];
+    else if (attrs[k] === true) n.setAttribute(k, '');
+    else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k]);
+  });
+  (kids || []).forEach(function (c) { n.append(c); });
+  return n;
+}
+function fmt(n) { return n.toLocaleString('en-US'); }
+function sum(list, f) { var t = 0; list.forEach(function (r) { t += f(r); }); return t; }
+function photoUrl(code) { return code.charAt(0) === 'a' ? AX + code.slice(1) : CM + code.slice(1); }
+function plural(n, one, many) { return n === 1 ? one : many; }
+
+var years = rows.map(function (r) { return r.year; });
+var MINY = Math.min.apply(null, years), MAXY = Math.max.apply(null, years);
+var NBS = Array.from(new Set(rows.map(function (r) { return r.nb; }))).sort();
+var patCount = {};
+rows.forEach(function (r) { patCount[r.pat] = (patCount[r.pat] || 0) + 1; });
+var PATS = Object.keys(patCount).sort(function (a, b) { return patCount[b] - patCount[a] || a.localeCompare(b); });
+
+var state = { q: '', nb: '', y0: MINY, y1: MAXY, pat: '', both: false, sortKey: 'year', sortDir: -1, shown: PAGE, open: null };
+
+function passes(r, skip) {
+  if (skip !== 'nb' && state.nb && r.nb !== state.nb) return false;
+  if (r.year < state.y0 || r.year > state.y1) return false;
+  if (skip !== 'pat' && state.pat && r.pat !== state.pat) return false;
+  if (state.q) {
+    var hay = (r.addr + ' ' + r.nb + ' ' + r.desc).toLowerCase();
+    if (hay.indexOf(state.q) < 0) return false;
+  }
+  if (state.both && !(r.b && r.a)) return false;
+  return true;
+}
+
+/* ---------- tooltip ---------- */
+var tip = $('#tip');
+function showTip(x, y, strong, lines) {
+  tip.textContent = '';
+  tip.append(el('div', { class: 'tv' }, [el('span', { class: 'tk' }), strong]));
+  lines.forEach(function (t) { tip.append(el('div', { class: 'tl', text: t })); });
+  tip.style.display = 'block';
+  var w = tip.offsetWidth, h = tip.offsetHeight;
+  var nx = Math.min(Math.max(8, x + 14), window.innerWidth - w - 8);
+  var ny = y - h - 12; if (ny < 8) ny = y + 18;
+  tip.style.left = nx + 'px'; tip.style.top = ny + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+function tipAtElement(node, strong, lines) {
+  var b = node.getBoundingClientRect();
+  showTip(b.left + b.width / 2, b.top, strong, lines);
+}
+
+/* ---------- filter controls ---------- */
+function fillSelect(sel, items) {
+  sel.textContent = '';
+  items.forEach(function (it) { sel.append(el('option', { value: it[0], text: it[1] })); });
+}
+fillSelect($('#f-nb'), [['', 'All neighborhoods']].concat(NBS.map(function (n) { return [n, n]; })));
+var yrOpts = []; for (var y = MINY; y <= MAXY; y++) yrOpts.push([String(y), String(y)]);
+fillSelect($('#f-y0'), yrOpts); fillSelect($('#f-y1'), yrOpts);
+fillSelect($('#f-pat'), [['', 'Any change']].concat(PATS.map(function (p) { return [p, p + ' homes (' + patCount[p] + ')']; })));
+
+var qTimer;
+$('#f-q').addEventListener('input', function (e) {
+  clearTimeout(qTimer);
+  var v = e.target.value.trim().toLowerCase();
+  qTimer = setTimeout(function () { state.q = v; state.shown = PAGE; render(); }, 120);
+});
+$('#f-nb').addEventListener('change', function (e) { state.nb = e.target.value; state.shown = PAGE; render(); });
+$('#f-pat').addEventListener('change', function (e) { state.pat = e.target.value; state.shown = PAGE; render(); });
+$('#f-both').addEventListener('change', function (e) { state.both = e.target.checked; state.shown = PAGE; render(); });
+$('#f-y0').addEventListener('change', function (e) { state.y0 = +e.target.value; if (state.y1 < state.y0) state.y1 = state.y0; state.shown = PAGE; render(); });
+$('#f-y1').addEventListener('change', function (e) { state.y1 = +e.target.value; if (state.y0 > state.y1) state.y0 = state.y1; state.shown = PAGE; render(); });
+$('#f-reset').addEventListener('click', function () {
+  state.q = ''; state.nb = ''; state.pat = ''; state.both = false; state.y0 = MINY; state.y1 = MAXY; state.shown = PAGE;
+  $('#f-q').value = ''; render();
+});
+
+var lastKey = '';
+function syncControls() {
+  var k = JSON.stringify([state.q, state.nb, state.pat, state.both, state.y0, state.y1]); if (k !== lastKey) { galShown = 24; lastKey = k; }
+  $('#f-nb').value = state.nb; $('#f-pat').value = state.pat; $('#f-both').checked = state.both;
+  $('#f-y0').value = String(state.y0); $('#f-y1').value = String(state.y1);
+  var active = state.q || state.nb || state.pat || state.both || state.y0 !== MINY || state.y1 !== MAXY;
+  $('#f-reset').hidden = !active;
+}
+
+/* ---------- summary tiles ---------- */
+function tile(cls, k, v, s) {
+  return el('div', { class: 'tile ' + cls }, [el('div', { class: 'k', text: k }), el('div', { class: 'v', text: v }), el('div', { class: 's', text: s })]);
+}
+function renderKpis(list) {
+  var n = list.length, lost = sum(list, function (r) { return r.lost; });
+  var one = list.filter(function (r) { return r.pat === '2 → 1'; }).length;
+  var recent = list.filter(function (r) { return r.year >= 2019; }).length;
+  var box = $('#kpis'); box.textContent = '';
+  box.append(
+    tile('hero', 'Homes lost', fmt(lost), n ? 'across ' + fmt(n) + ' ' + plural(n, 'building', 'buildings') : 'no buildings match these filters'),
+    tile('', 'Buildings', fmt(n), n ? 'about ' + (lost / n).toFixed(1) + ' homes lost each' : '—'),
+    tile('', 'Two homes became one', n ? Math.round(100 * one / n) + '%' : '—', fmt(one) + ' of ' + fmt(n) + ' buildings'),
+    tile('', 'Permitted in 2019 or later', n ? Math.round(100 * recent / n) + '%' : '—', fmt(recent) + ' of ' + fmt(n) + ' buildings')
+  );
+}
+
+/* ---------- year chart ---------- */
+function niceStep(max) {
+  var target = Math.max(max, 4) / 4, c = [1, 2, 5, 10, 20, 25, 50, 100, 200];
+  for (var i = 0; i < c.length; i++) if (c[i] >= target) return c[i];
+  return 500;
+}
+function renderYear(list) {
+  var byY = {}; list.forEach(function (r) { var o = byY[r.year] || (byY[r.year] = { lost: 0, n: 0 }); o.lost += r.lost; o.n++; });
+  var ys = []; for (var y = MINY; y <= MAXY; y++) ys.push(y);
+  var vals = ys.map(function (y) { return byY[y] ? byY[y].lost : 0; });
+  var max = Math.max.apply(null, vals);
+  var step = niceStep(max), top = Math.max(step * Math.ceil(max / step), step);
+  var root = $('#yc'); root.textContent = '';
+  var plot = el('div', { class: 'yplot', role: 'img', 'aria-label': 'Column chart of homes lost per year, ' + MINY + ' to ' + MAXY + '. The data table below has every value.' });
+  var axisCol = el('div'); root.append(axisCol, plot);
+  for (var t = 0; t <= top; t += step) {
+    var pos = (t / top) * 100;
+    plot.append(el('div', { class: 'ygrid' + (t === 0 ? ' base' : ''), style: 'bottom:' + pos + '%' }));
+    plot.append(el('div', { class: 'ytick', style: 'bottom:' + pos + '%', text: String(t) }));
+  }
+  var cols = el('div', { class: 'ycols' }); plot.append(cols);
+  var peak = vals.indexOf(max);
+  ys.forEach(function (yr, i) {
+    var v = vals[i], o = byY[yr] || { lost: 0, n: 0 };
+    var partial = yr === PARTIAL_YEAR;
+    var label = yr + ': ' + v + ' ' + plural(v, 'home', 'homes') + ' lost in ' + o.n + ' ' + plural(o.n, 'building', 'buildings') + (partial ? ' (partial year)' : '');
+    var c = el('button', { class: 'ycol' + (partial ? ' partial' : ''), type: 'button', 'aria-label': label });
+    var bar = el('span', { class: 'yb', style: 'height:' + (v / top * 100) + '%' });
+    c.append(bar);
+    if (v > 0 && i === peak) c.append(el('span', { class: 'yv', style: 'bottom:' + (v / top * 100) + '%', text: String(v) }));
+    var lines = [yr + (partial ? ' (partial year)' : ''), o.n + ' ' + plural(o.n, 'building', 'buildings')];
+    function go(ev) { var p = ev.clientX ? [ev.clientX, ev.clientY] : null; if (p) showTip(p[0], p[1], v + ' ' + plural(v, 'home', 'homes') + ' lost', lines); else tipAtElement(bar, v + ' ' + plural(v, 'home', 'homes') + ' lost', lines); }
+    c.addEventListener('pointermove', go); c.addEventListener('focus', go); c.addEventListener('pointerleave', hideTip); c.addEventListener('blur', hideTip);
+    cols.append(c);
+  });
+  var xrow = el('div', { class: 'xrow' });
+  ys.forEach(function (yr) { xrow.append(el('div', { class: 'xl' }, [(yr - MINY) % 5 === 0 ? yr : ''])); });
+  root.append(xrow);
+  var tot = sum(list, function (r) { return r.lost; });
+  $('#year-sub').textContent = list.length ? (fmt(tot) + ' homes lost in total. ' + MAXY + ' is a partial year, so its column is paler.') : 'No buildings match these filters.';
+  var tb = el('table'); tb.append(el('thead', null, [el('tr', null, [el('th', { text: 'Year' }), el('th', { text: 'Homes lost' }), el('th', { text: 'Buildings' })])]));
+  var body = el('tbody');
+  ys.forEach(function (yr, i) { var o = byY[yr] || { n: 0 }; body.append(el('tr', null, [el('td', { text: String(yr) }), el('td', { text: String(vals[i]) }), el('td', { text: String(o.n) })])); });
+  tb.append(body); var d = $('#year-data'); d.textContent = ''; d.append(tb);
+}
+
+/* ---------- ranked bars (also filter controls) ---------- */
+function renderRanked(rootId, dataId, items, selected, onPick, valueLabel) {
+  var root = $('#' + rootId); root.textContent = '';
+  var max = Math.max.apply(null, items.map(function (i) { return i.value; }).concat([1]));
+  root.classList.toggle('has-sel', !!selected);
+  items.forEach(function (it) {
+    var isSel = selected && it.key === selected;
+    var b = el('button', { class: 'rbar', type: 'button', 'aria-pressed': it.key == null ? false : String(!!isSel), disabled: it.key == null,
+                           'aria-label': it.label + ': ' + it.value + ' ' + valueLabel + (it.extra ? ', ' + it.extra : '') });
+    b.append(el('span', { class: 'rl', text: it.label }),
+      el('span', { class: 'rt' }, [el('span', { class: 'rf', style: '--p:' + (it.value / max) }), el('span', { class: 'rv', text: String(it.value) })]));
+    if (it.key != null) b.addEventListener('click', function () { onPick(isSel ? '' : it.key); });
+    function go(ev) { var p = ev.clientX ? [ev.clientX, ev.clientY] : null; var lines = it.extra ? [it.label, it.extra] : [it.label];
+      if (p) showTip(p[0], p[1], it.value + ' ' + valueLabel, lines); else tipAtElement(b, it.value + ' ' + valueLabel, lines); }
+    b.addEventListener('pointermove', go); b.addEventListener('focus', go); b.addEventListener('pointerleave', hideTip); b.addEventListener('blur', hideTip);
+    root.append(b);
+  });
+  var tb = el('table'); tb.append(el('thead', null, [el('tr', null, [el('th', { text: 'Group' }), el('th', { text: valueLabel })])]));
+  var body = el('tbody'); items.forEach(function (it) { body.append(el('tr', null, [el('td', { text: it.label }), el('td', { text: String(it.value) })])); });
+  tb.append(body); var d = $('#' + dataId); d.textContent = ''; d.append(tb);
+}
+function renderPatterns() {
+  var list = rows.filter(function (r) { return passes(r, 'pat'); });
+  var g = {}; list.forEach(function (r) { var o = g[r.pat] || (g[r.pat] = { n: 0, lost: 0 }); o.n++; o.lost += r.lost; });
+  var keys = Object.keys(g).sort(function (a, b) { return g[b].n - g[a].n || a.localeCompare(b); });
+  var top = keys.slice(0, 7);
+  if (state.pat && keys.indexOf(state.pat) >= 0 && top.indexOf(state.pat) < 0) top[top.length - 1] = state.pat;
+  var items = top.map(function (k) { return { key: k, label: k + ' homes', value: g[k].n, extra: g[k].lost + ' homes lost' }; });
+  var rest = keys.filter(function (k) { return top.indexOf(k) < 0; });
+  if (rest.length) {
+    items.push({ key: null, label: 'Other changes', value: sum(rest, function (k) { return g[k].n; }), extra: rest.length + ' other ' + plural(rest.length, 'pattern', 'patterns') + ', ' + sum(rest, function (k) { return g[k].lost; }) + ' homes lost' });
+  }
+  renderRanked('pat-bars', 'pat-data', items, state.pat, function (k) { state.pat = k; state.shown = PAGE; render(); }, 'buildings');
+  if (!items.length) $('#pat-bars').append(el('p', { class: 'sub', text: 'No buildings match these filters.' }));
+}
+function renderNeighborhoods() {
+  var list = rows.filter(function (r) { return passes(r, 'nb'); });
+  var g = {}; NBS.forEach(function (n) { g[n] = { lost: 0, n: 0 }; });
+  list.forEach(function (r) { g[r.nb].lost += r.lost; g[r.nb].n++; });
+  var order = NBS.slice().sort(function (a, b) { return g[b].lost - g[a].lost || a.localeCompare(b); });
+  var items = order.map(function (k) { return { key: k, label: k, value: g[k].lost, extra: g[k].n + ' ' + plural(g[k].n, 'building', 'buildings') }; });
+  renderRanked('nb-bars', 'nb-data', items, state.nb, function (k) { state.nb = k; state.shown = PAGE; render(); }, 'homes lost');
+}
+
+/* ---------- map ---------- */
+var lats = rows.map(function (r) { return r.lat; }), lons = rows.map(function (r) { return r.lon; });
+var LAT0 = Math.min.apply(null, lats), LAT1 = Math.max.apply(null, lats), LON0 = Math.min.apply(null, lons), LON1 = Math.max.apply(null, lons);
+var KX = Math.cos(((LAT0 + LAT1) / 2) * Math.PI / 180);
+var NBCENTER = {};
+NBS.forEach(function (n) {
+  var m = rows.filter(function (r) { return r.nb === n; });
+  NBCENTER[n] = { n: m.length, lat: sum(m, function (r) { return r.lat; }) / m.length, lon: sum(m, function (r) { return r.lon; }) / m.length };
+});
+var mapPts = [];
+function renderMap(list) {
+  var box = $('#map'); box.textContent = '';
+  var avail = Math.max(280, Math.min(box.clientWidth || 640, 640)), pad = 18;
+  var dx = (LON1 - LON0) * KX, dy = (LAT1 - LAT0);
+  var scale = (avail - 2 * pad) / dx;
+  var maxH = 480; if (dy * scale + 2 * pad > maxH) scale = (maxH - 2 * pad) / dy;
+  var W = Math.round(dx * scale + 2 * pad), H = Math.round(dy * scale + 2 * pad);
+  function px(r) { return pad + (r.lon - LON0) * KX * scale; }
+  function py(r) { return pad + (LAT1 - r.lat) * scale; }
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  NBS.forEach(function (n) {
+    var c = NBCENTER[n]; return;
+    var t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', pad + (c.lon - LON0) * KX * scale); t.setAttribute('y', pad + (LAT1 - c.lat) * scale);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-size', '11'); t.setAttribute('fill', 'var(--muted)');
+    t.setAttribute('style', 'font-family:var(--font);pointer-events:none'); t.textContent = n;
+    svg.append(t);
+  });
+  mapPts = list.slice().sort(function (a, b) { return b.lost - a.lost; }).map(function (r) {
+    var rad = 4 + Math.sqrt(Math.max(0, r.lost - 1)) * 2.2;
+    var c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', px(r).toFixed(1)); c.setAttribute('cy', py(r).toFixed(1)); c.setAttribute('r', rad.toFixed(1));
+    c.setAttribute('fill', 'var(--accent)'); c.setAttribute('fill-opacity', '0.75');
+    c.setAttribute('stroke', 'var(--surface)'); c.setAttribute('stroke-width', '2');
+    svg.append(c);
+    return { r: r, x: px(r), y: py(r), rad: rad };
+  });
+  var hl = document.createElementNS(NS, 'circle'); hl.setAttribute('fill', 'none'); hl.setAttribute('stroke', 'var(--ink)'); hl.setAttribute('stroke-width', '2'); hl.setAttribute('display', 'none');
+  svg.append(hl);
+  function nearest(ev) {
+    var b = svg.getBoundingClientRect(); var f = W / b.width;
+    var x = (ev.clientX - b.left) * f, y = (ev.clientY - b.top) * f, best = null, bd = 24 * f;
+    mapPts.forEach(function (p) { var d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } });
+    return best;
+  }
+  svg.addEventListener('pointermove', function (ev) {
+    var p = nearest(ev);
+    if (!p) { hl.setAttribute('display', 'none'); hideTip(); svg.style.cursor = ''; return; }
+    hl.setAttribute('cx', p.x); hl.setAttribute('cy', p.y); hl.setAttribute('r', p.rad + 2); hl.removeAttribute('display'); svg.style.cursor = 'pointer';
+    showTip(ev.clientX, ev.clientY, p.r.addr, [p.r.nb + ', ' + p.r.year, p.r.pat + ' homes, ' + p.r.lost + ' ' + plural(p.r.lost, 'home', 'homes') + ' lost']);
+  });
+  svg.addEventListener('pointerleave', function () { hl.setAttribute('display', 'none'); hideTip(); });
+  svg.addEventListener('click', function (ev) { var p = nearest(ev); if (p) openRow(p.r.id); });
+  box.append(svg);
+}
+
+/* ---------- table ---------- */
+var COLS = [
+  { key: 'addr', label: 'Address', cls: 'c-addr' },
+  { key: 'nb', label: 'Neighborhood', cls: 'c-nb' },
+  { key: 'year', label: 'Year', n: true },
+  { key: 'pre', label: 'Homes before', n: true },
+  { key: 'post', label: 'Homes after', n: true },
+  { key: 'lost', label: 'Homes lost', n: true },
+  { key: 'photos', label: 'Photos' }
+];
+function photoRank(r) { return (r.b ? 1 : 0) + (r.a ? 2 : 0); }
+function photoText(r) { return r.b && r.a ? 'Both' : r.a ? 'Current only' : r.b ? 'Archive only' : 'None'; }
+function sortedList(list) {
+  var k = state.sortKey, d = state.sortDir;
+  return list.slice().sort(function (a, b) {
+    var c;
+    if (k === 'addr' || k === 'nb') c = a[k].localeCompare(b[k], 'en', { numeric: true });
+    else if (k === 'photos') c = photoRank(a) - photoRank(b);
+    else c = a[k] - b[k];
+    return c * d || a.addr.localeCompare(b.addr, 'en', { numeric: true });
+  });
+}
+function photoBox(label, code, addr) {
+  var fig = el('figure', { class: 'ph' });
+  if (!code) { fig.append(el('div', { class: 'ph-empty', text: 'No photo on file' }), el('figcaption', { text: label })); return fig; }
+  var url = photoUrl(code);
+  var a = el('a', { class: 'ph-link', href: url, target: '_blank', rel: 'noopener', 'aria-label': label + ' for ' + addr + ', opens in a new tab' }, [el('span', { text: 'Open photo ↗' })]);
+  var img = document.createElement('img'); img.alt = ''; img.loading = 'lazy';
+  img.addEventListener('error', function () { img.remove(); });
+  img.src = url; a.append(img);
+  fig.append(a, el('figcaption', { text: label }));
+  return fig;
+}
+function detailRow(r) {
+  var td = el('td', { colspan: String(COLS.length) });
+  var left = el('div');
+  var facts = el('dl', { class: 'facts' });
+  [['Homes before', r.pre], ['Homes after', r.post], ['Net change', (r.net > 0 ? '+' : '') + r.net], ['Housing starts', r.hs], ['Permit year', r.year], ['Map-lot', r.lot]].forEach(function (f) {
+    facts.append(el('dt', { text: f[0] }), el('dd', { text: String(f[1]) }));
+  });
+  left.append(facts);
+  left.append(r.desc ? el('p', { class: 'desc', text: r.desc }) : el('p', { class: 'desc none', text: 'The permit record has no project description.' }));
+  if (r.mismatch) left.append(el('p', { class: 'flag', text: 'The home counts for this address do not add up (' + r.pre + ' before, ' + r.post + ' after, net change ' + r.net + '). The totals above use the net change.' }));
+  var right = el('div');
+  right.append(el('div', { class: 'photos' }, [photoBox('Before: first archive photo', r.b, r.addr), photoBox('After: current assessor photo', r.a, r.addr)]));
+  if (r.ph.length) {
+    var more = el('div', { class: 'more' }, [el('span', { class: 'lab', text: 'All archive photos:' })]);
+    r.ph.forEach(function (c, i) { more.append(el('a', { class: 'chip', href: photoUrl(c), target: '_blank', rel: 'noopener', text: 'Photo ' + (i + 1) + ' ↗' })); });
+    right.append(more);
+  }
+  td.append(el('div', { class: 'dgrid' }, [left, right]));
+  return el('tr', { class: 'detail', id: 'detail-' + r.id }, [td]);
+}
+function renderTable(list) {
+  var sorted = sortedList(list);
+  if (state.open != null && !sorted.some(function (r) { return r.id === state.open; })) state.open = null;
+  var t = $('#rec'); t.textContent = '';
+  var head = el('tr');
+  COLS.forEach(function (c) {
+    var th = el('th', { scope: 'col', class: c.n ? 'n' : '' });
+    if (state.sortKey === c.key) th.setAttribute('aria-sort', state.sortDir > 0 ? 'ascending' : 'descending');
+    var b = el('button', { type: 'button' }, [c.label + (state.sortKey === c.key ? (state.sortDir > 0 ? ' ↑' : ' ↓') : '')]);
+    b.addEventListener('click', function () {
+      if (state.sortKey === c.key) state.sortDir *= -1; else { state.sortKey = c.key; state.sortDir = (c.key === 'addr' || c.key === 'nb') ? 1 : -1; }
+      state.shown = PAGE; renderTable(rows.filter(function (r) { return passes(r); }));
+    });
+    th.append(b); head.append(th);
+  });
+  t.append(el('thead', null, [head]));
+  var body = el('tbody'); t.append(body);
+  if (!sorted.length) {
+    body.append(el('tr', null, [el('td', { colspan: String(COLS.length), class: 'empty', text: 'No buildings match these filters. Reset the filters to see all ' + rows.length + ' records.' })]));
+  }
+  sorted.slice(0, state.shown).forEach(function (r) {
+    var open = state.open === r.id;
+    var tr = el('tr', { class: 'row', id: 'row-' + r.id });
+    var ab = el('button', { class: 'addr', type: 'button', 'aria-expanded': String(open), 'aria-controls': 'detail-' + r.id }, [el('span', { class: 'chev', 'aria-hidden': 'true', text: '▶' }), r.addr]);
+    ab.addEventListener('click', function () { state.open = open ? null : r.id; renderTable(list); if (!open) { var d = document.getElementById('row-' + r.id); if (d) d.scrollIntoView({ block: 'nearest' }); } });
+    tr.append(
+      el('td', { class: 'c-addr', 'data-l': 'Address' }, [ab]),
+      el('td', { class: 'c-nb', 'data-l': 'Neighborhood', text: r.nb }),
+      el('td', { class: 'n', 'data-l': 'Year', text: String(r.year) }),
+      el('td', { class: 'n', 'data-l': 'Before', text: String(r.pre) }),
+      el('td', { class: 'n', 'data-l': 'After', text: String(r.post) }),
+      el('td', { class: 'n lostc', 'data-l': 'Lost', text: String(r.lost) }),
+      el('td', { 'data-l': 'Photos' }, [el('span', { class: 'ph-state', text: photoText(r) })])
+    );
+    body.append(tr);
+    if (open) body.append(detailRow(r));
+  });
+  var more = $('#showmore');
+  if (sorted.length > state.shown) {
+    more.hidden = false; more.textContent = '';
+    var btn = el('button', { class: 'btn', type: 'button', text: 'Show ' + Math.min(PAGE, sorted.length - state.shown) + ' more' });
+    btn.addEventListener('click', function () { state.shown += PAGE; renderTable(list); });
+    more.append(btn, el('span', { text: 'Showing ' + state.shown + ' of ' + fmt(sorted.length) }));
+  } else { more.hidden = true; }
+  $('#rec-sub').textContent = sorted.length ? ('Select an address for its description and photos. Sorted by ' + COLS.filter(function (c) { return c.key === state.sortKey; })[0].label.toLowerCase() + '.') : '';
+}
+function openRow(id) {
+  var list = sortedList(rows.filter(function (r) { return passes(r); }));
+  var idx = list.findIndex(function (r) { return r.id === id; });
+  if (idx < 0) return;
+  state.open = id; if (idx >= state.shown) state.shown = idx + 1;
+  renderTable(list);
+  var d = document.getElementById('row-' + id); if (d) d.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+/* ---------- gallery ---------- */
+var galShown = 24;
+function renderGallery(list) {
+  var sorted = list.slice().sort(function (a, b) { return b.year - a.year || a.addr.localeCompare(b.addr, 'en', { numeric: true }); });
+  var g = $('#gal'); g.textContent = '';
+  var withAny = sorted.filter(function (r) { return r.b || r.a; });
+  $('#gal-sub').textContent = withAny.length
+    ? fmt(withAny.length) + ' ' + plural(withAny.length, 'building', 'buildings') + ' with photos, newest permit first. Before is the first archive photo; after is the current assessor photo. Select an address to open its record.'
+    : 'No photos for the buildings that match these filters.';
+  withAny.slice(0, galShown).forEach(function (r) {
+    var head = el('div', { class: 'ghead' });
+    var ab = el('button', { class: 'ga', type: 'button', text: r.addr });
+    ab.addEventListener('click', function () { openRow(r.id); });
+    head.append(ab, el('span', { class: 'gmeta', text: r.year + ' \u00B7 ' + r.pat + ' \u00B7 ' + r.lost + ' lost' }));
+    g.append(el('div', { class: 'gcard' }, [head, el('div', { class: 'gpair' }, [photoBox('Before', r.b, r.addr), photoBox('After', r.a, r.addr)]), el('div', { class: 'gmeta', text: r.nb })]));
+  });
+  var m = $('#galmore');
+  if (withAny.length > galShown) {
+    m.hidden = false; m.textContent = '';
+    var b1 = el('button', { class: 'btn', type: 'button', text: 'Show 24 more' });
+    b1.addEventListener('click', function () { galShown += 24; renderGallery(list); });
+    var b2 = el('button', { class: 'btn', type: 'button', text: 'Show all ' + fmt(withAny.length) });
+    b2.addEventListener('click', function () { galShown = withAny.length; renderGallery(list); });
+    m.append(b1, b2, el('span', { text: 'Showing ' + galShown + ' of ' + fmt(withAny.length) }));
+  } else { m.hidden = true; }
+}
+
+/* ---------- copy as CSV ---------- */
+function csvCell(v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+$('#copy-csv').addEventListener('click', function () {
+  var list = sortedList(rows.filter(function (r) { return passes(r); }));
+  var lines = [['address', 'neighborhood', 'permit_year', 'homes_before', 'homes_after', 'homes_lost', 'housing_starts', 'description', 'map_lot', 'before_photo', 'current_photo'].join(',')];
+  list.forEach(function (r) { lines.push([r.addr, r.nb, r.year, r.pre, r.post, r.lost, r.hs, r.desc, r.lot, r.b ? photoUrl(r.b) : '', r.a ? photoUrl(r.a) : ''].map(csvCell).join(',')); });
+  var text = lines.join('\n'), msg = $('#copy-msg'), box = $('#csvbox');
+  function fallback() { box.hidden = false; box.value = text; box.focus(); box.select(); msg.textContent = 'Copy is blocked here. Select the text below and copy it.'; }
+  try {
+    navigator.clipboard.writeText(text).then(function () { box.hidden = true; msg.textContent = 'Copied ' + fmt(list.length) + ' rows.'; }, fallback);
+  } catch (e) { fallback(); }
+});
+
+/* ---------- notes that depend on the data ---------- */
+(function () {
+  var nb = rows.filter(function (r) { return r.b; }).length, na = rows.filter(function (r) { return r.a; }).length;
+  $('#note-photos').textContent = 'Photos: ' + nb + ' of ' + rows.length + ' addresses have an archive photo and ' + na + ' have a current photo. Archive photos are undated, and the first one listed is shown as "before", so a few may not predate the change. Current photos come from the Assessor’s property database.';
+  var flags = rows.filter(function (r) { return r.mismatch; });
+  var f = $('#note-flag');
+  if (flags.length) f.textContent = 'Data check: ' + flags.map(function (r) { return r.addr; }).join(', ') + ' ' + plural(flags.length, 'reports', 'report') + ' before and after counts that differ from the net change. Totals use the net change.';
+  else f.remove();
+})();
+
+/* ---------- render ---------- */
+function render() {
+  syncControls();
+  var list = rows.filter(function (r) { return passes(r); });
+  $('#f-count').textContent = fmt(list.length) + ' of ' + fmt(rows.length) + ' buildings shown';
+  renderGallery(list); renderKpis(list); renderYear(list); renderPatterns(); renderNeighborhoods(); renderMap(list); renderTable(list);
+}
+var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { renderMap(rows.filter(function (r) { return passes(r); })); }, 150); });
+render();
+})();
+</script>
+</body>
+</html>
