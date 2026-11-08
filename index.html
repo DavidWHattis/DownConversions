@@ -4,58 +4,41 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cambridge Downconversions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 /* Layout: one 1080px column. Filters scope everything beneath them: summary figures,
    year chart, two ranked charts, a dot map, then the full record table. */
 :root {
-  --bg: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink2: #52514e;
-  --muted: #898781;
-  --line: #e1e0d9;
-  --axis: #c3c2b7;
-  --accent: #2a78d6;
-  --accent-ink: #1c5cab;
-  --accent-wash: rgba(42,120,214,0.10);
-  --dim: #cfcec6;
-  --ring: rgba(11,11,11,0.10);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --bg: #F3F7F6; --surface: #FFFFFF; --ink: #122322; --ink2: #4A5C5A; --muted: #5B6F6C;
+  --line: #C9D8D4; --axis: #A5BDB7; --accent: #1F5F5B; --accent-ink: #1F5F5B; --accent-hover: #174A47;
+  --accent-wash: rgba(31,95,91,0.09); --dim: #C9D8D4; --ring: #C9D8D4;
+  --sea: #8CC0B5; --yellow: #FFC72C; --yellow-hover: #EDB512; --on-teal: #F3F7F6; --rose: #FF9485;
+  --font: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --display: "Anton", Impact, "Arial Narrow Bold", sans-serif;
+  --serif: "DM Serif Display", Georgia, serif;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
-    --line: #2c2c2a; --axis: #383835; --accent: #3987e5; --accent-ink: #6da7ec;
-    --accent-wash: rgba(57,135,229,0.16); --dim: #3a3a37; --ring: rgba(255,255,255,0.10);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --muted: #898781;
-  --line: #2c2c2a; --axis: #383835; --accent: #3987e5; --accent-ink: #6da7ec;
-  --accent-wash: rgba(57,135,229,0.16); --dim: #3a3a37; --ring: rgba(255,255,255,0.10);
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
-  font: 15px/1.5 var(--font);
+  font: 17px/1.55 var(--font);
 }
 h1, h2, h3 { text-wrap: balance; margin: 0; }
 p { margin: 0; }
 button, select, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-a { color: var(--accent-ink); }
+a { color: var(--accent-ink); text-underline-offset: 2px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
 
 /* header */
 .head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
 .head h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.1; font-weight: 700; letter-spacing: -0.015em; }
-.head .lede { font-size: 17px; color: var(--ink2); max-width: 64ch; }
+.head .lede { font-size: 16px; color: var(--ink2); max-width: 72ch; }
 .head .def { font-size: 14px; color: var(--ink2); max-width: 72ch; }
 
 /* filters */
@@ -82,7 +65,7 @@ a { color: var(--accent-ink); }
 .tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .tile .k { font-size: 13px; color: var(--ink2); }
 .tile .v { font-size: 34px; line-height: 1.1; font-weight: 650; letter-spacing: -0.01em; }
-.tile.hero .v { font-size: 56px; color: var(--accent-ink); }
+
 .tile .s { font-size: 13px; color: var(--muted); }
 @media (max-width: 860px) { .kpis { grid-template-columns: 1fr 1fr; } .tile.hero { grid-column: 1 / -1; } }
 
@@ -100,7 +83,7 @@ details.data th { color: var(--muted); }
 details.data .scroll { max-height: 240px; overflow: auto; }
 
 /* year columns */
-.yc { position: relative; margin-top: 10px; display: grid; grid-template-columns: 28px 1fr; column-gap: 8px; }
+.yc { position: relative; margin-top: 24px; display: grid; grid-template-columns: 28px 1fr; column-gap: 8px; }
 .yplot { position: relative; height: 200px; }
 .ygrid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--line); }
 .ygrid.base { border-top-color: var(--axis); }
@@ -115,6 +98,9 @@ details.data .scroll { max-height: 240px; overflow: auto; }
 .xrow { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 6px; }
 .xl { text-align: center; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: visible; font-variant-numeric: tabular-nums; }
 .xl span { display: inline-block; width: 0; }
+
+.zline { position: absolute; left: 0; top: -8px; bottom: 0; border-left: 1.5px dashed var(--ink2); pointer-events: none; }
+.zlab { position: absolute; right: 6px; top: -22px; font-size: 12px; color: var(--ink2); white-space: nowrap; }
 
 /* ranked bars */
 .rbars { display: flex; flex-direction: column; gap: 4px; }
@@ -148,7 +134,7 @@ details.data .scroll { max-height: 240px; overflow: auto; }
 .gmeta { font-size: 12px; color: var(--ink2); }
 .gpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .gpair figure.ph { width: 100%; }
-.galmore { border-top: 0; padding: 0; }
+#galmore.showmore { border-top: 0; padding: 0; }
 
 /* table */
 .tcard { padding: 0; overflow: hidden; gap: 0; }
@@ -217,16 +203,47 @@ figure.ph figcaption { font-size: 12px; color: var(--ink2); }
 #tip .tl { color: var(--ink2); }
 #tip .tk { display: inline-block; width: 12px; height: 2px; background: var(--accent); vertical-align: middle; margin-right: 6px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* hero */
+.masthead { background: #122322; color: var(--on-teal); }
+.mast-in { max-width: 1080px; margin: 0 auto; padding: 48px 16px 44px; display: flex; flex-direction: column; gap: 18px; }
+.kicker { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--sea); font-weight: 700; }
+.masthead h1 { font-family: var(--font); font-weight: 700; font-size: clamp(40px, 7vw, 72px); line-height: 1; letter-spacing: -0.03em; color: #fff; }
+.intro { font-size: 18px; line-height: 1.6; max-width: 70ch; color: #dbe7e4; }
+.intro a { color: var(--yellow); }
+.defn { font-family: var(--serif); font-style: italic; font-size: 21px; color: var(--sea); max-width: 60ch; line-height: 1.35; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.pbtn, .obtn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 22px; border-radius: 999px; font-weight: 700; text-decoration: none; letter-spacing: .01em; }
+.pbtn { background: var(--yellow); color: #122322; }
+.pbtn:hover { background: var(--yellow-hover); }
+.obtn { border: 2px solid var(--on-teal); color: var(--on-teal); }
+.obtn:hover { background: rgba(243,247,246,.12); }
+.foot { background: #122322; color: #b7c9c5; font-size: 14px; }
+.foot-in { max-width: 1080px; margin: 0 auto; padding: 32px 16px 40px; max-width: 1080px; line-height: 1.55; }
+html { scroll-behavior: smooth; }
+.card h2, .notes h2 { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .02em; font-size: 24px; line-height: 1.1; }
+.tile .v { font-family: var(--display); font-weight: 400; letter-spacing: .01em; }
+.tile.hero { background: var(--accent); border-color: var(--accent); }
+.tile.hero .k, .tile.hero .s { color: #cfe3de; }
+.tile.hero .v { color: var(--yellow); font-size: 72px; }
+.btn { border-radius: 999px; font-weight: 700; padding: 0 18px; }
+.btn:hover { border-color: var(--accent); background: var(--accent-wash); }
+.card, .tile, .filters { border-radius: 14px; }
+.filters { border-color: var(--line); }
 </style>
 </head>
 <body>
+<header class="masthead">
+  <div class="mast-in">
+    <p class="kicker">Cambridge, MA &middot; Housing permits, 1996&ndash;2026</p>
+    <h1>Cambridge downconversions</h1>
+    <p class="intro">Prior to multifamily zoning reform, zoning imposed strict limits on what could be built in Cambridge neighborhoods. However, this did not mean that there was no investment in the city's housing stock, or that residential developments were not possible. Property owners tended to invest in their properties through renovations or new developments with few homes. Developments that reduced the number of homes were common. This page shows a list of these down conversion developments that have occurred in Cambridge, taken from the city's <a href="https://data.cambridgema.gov/Housing/Housing-Permits-Map/2rxh-46kx" target="_blank" rel="noopener">permits database</a>. Since multifamily zoning passed in 2025, consistent with what CDD has reported, we find that the number of down conversion developments has decreased. Instead, developments proposed since 2025 are more likely to be adding homes. Exclusionary zoning never protected old rental housing; it exacerbated the shortage of housing that drove up housing prices citywide.</p>
+    <p class="defn">A downconversion is a permit that lowers a building's home count but leaves at least one home, such as a two-family house becoming a single-family house. Each record is one address.</p>
+    <div class="cta"><a class="pbtn" href="#gallery">See the photos</a><a class="obtn" href="#records">Browse all records</a></div>
+  </div>
+</header>
 <div class="wrap">
 
-  <header class="head">
-    <h1>Cambridge downconversions</h1>
-    <p class="lede">Buildings in Cambridge where a permit took homes away but kept at least one, from 1996 to 2026.</p>
-    <p class="def">A downconversion is a permit that lowers a building's home count, such as a two-family house becoming a single-family house. Each row below is one address, with its permit details and photos from before and after.</p>
-  </header>
 
   <section class="filters" aria-label="Filters">
     <div class="field"><label for="f-q">Search address or description</label><input id="f-q" type="search" placeholder="e.g. Fayerweather"></div>
@@ -238,7 +255,7 @@ figure.ph figcaption { font-size: 12px; color: var(--ink2); }
     <div class="fstat"><span id="f-count" aria-live="polite"></span><button class="linkbtn" id="f-reset" hidden>Reset filters</button></div>
   </section>
 
-  <section class="card" aria-labelledby="h-gal">
+  <section class="card" id="gallery" aria-labelledby="h-gal">
     <div><h2 id="h-gal">Before and after</h2><p class="sub" id="gal-sub"></p></div>
     <div class="gal" id="gal"></div>
     <div class="showmore galmore" id="galmore" hidden></div>
@@ -301,6 +318,7 @@ figure.ph figcaption { font-size: 12px; color: var(--ink2); }
     </ul>
   </section>
 </div>
+<footer class="foot"><div class="foot-in">Data: City of Cambridge housing permits database. Photos: Cambridge Assessor property database and the city&rsquo;s AxisGIS historical viewer. Each address is summed across its permits; see &ldquo;About these numbers&rdquo; above.</div></footer>
 <div id="tip" role="tooltip"></div>
 
 <script>
@@ -459,6 +477,7 @@ function renderYear(list) {
     var lines = [yr + (partial ? ' (partial year)' : ''), o.n + ' ' + plural(o.n, 'building', 'buildings')];
     function go(ev) { var p = ev.clientX ? [ev.clientX, ev.clientY] : null; if (p) showTip(p[0], p[1], v + ' ' + plural(v, 'home', 'homes') + ' lost', lines); else tipAtElement(bar, v + ' ' + plural(v, 'home', 'homes') + ' lost', lines); }
     c.addEventListener('pointermove', go); c.addEventListener('focus', go); c.addEventListener('pointerleave', hideTip); c.addEventListener('blur', hideTip);
+    if (yr === 2025) c.append(el('span', { class: 'zline' }, [el('span', { class: 'zlab', text: 'Multifamily zoning passed' })]));
     cols.append(c);
   });
   var xrow = el('div', { class: 'xrow' });
@@ -550,7 +569,7 @@ function renderMap(list) {
     var rad = 4 + Math.sqrt(Math.max(0, r.lost - 1)) * 2.2;
     var c = document.createElementNS(NS, 'circle');
     c.setAttribute('cx', px(r).toFixed(1)); c.setAttribute('cy', py(r).toFixed(1)); c.setAttribute('r', rad.toFixed(1));
-    c.setAttribute('fill', 'var(--accent)'); c.setAttribute('fill-opacity', '0.75');
+    c.setAttribute('fill', 'var(--accent)'); c.setAttribute('fill-opacity', '0.8');
     c.setAttribute('stroke', 'var(--surface)'); c.setAttribute('stroke-width', '2');
     svg.append(c);
     return { r: r, x: px(r), y: py(r), rad: rad };
